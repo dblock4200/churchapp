@@ -4,22 +4,24 @@ import { Screen, Card, Kicker, Row, Stack, Avatar, Hairline } from '../../src/ui
 import { T } from '../../src/ui/Text';
 import { Icon, IconName } from '../../src/ui/Icon';
 import { useColors } from '../../src/theme/ThemeProvider';
-import { hasSupabase } from '../../src/lib/supabase';
+import { useAuth } from '../../src/auth/AuthProvider';
 
 // The You tab wasn't in the mockup set — this is a first honest pass so the
 // third tab isn't empty: identity, the week-admin note, and quiet settings.
 export default function You() {
   const c = useColors();
+  const { member, signOut } = useAuth();
+  const name = member?.display_name ?? 'You';
   return (
     <Screen>
       <Row style={{ minHeight: 46, marginTop: 8 }}><T variant="t1">You</T></Row>
 
       <Card pad={16} style={{ marginTop: 8 }}>
         <Row gap={16}>
-          <Avatar name="Renee" size={64} />
+          <Avatar name={name} size={64} />
           <View style={{ flex: 1 }}>
-            <T variant="t2">Renee</T>
-            <T variant="body" color={c.text2} style={{ marginTop: 2 }}>Leads Tuesday Night · 9 in the group</T>
+            <T variant="t2">{name}</T>
+            <T variant="body" color={c.text2} style={{ marginTop: 2 }}>{member?.is_leader ? 'Leads' : 'Part of'} {member?.group_name ?? 'Tuesday Night'}</T>
           </View>
         </Row>
       </Card>
@@ -37,9 +39,9 @@ export default function You() {
         ]} />
       </View>
 
-      <T variant="body" color={c.text2} style={{ marginTop: 20, textAlign: 'center', fontSize: 13 }}>
-        {hasSupabase ? 'Signed in' : 'Running on sample data — connect Supabase to go live'}
-      </T>
+      <View style={{ marginTop: 20, alignItems: 'center' }}>
+        <T variant="body" color={c.text2} onPress={signOut} style={{ fontSize: 15, fontWeight: '600' }}>Sign out</T>
+      </View>
     </Screen>
   );
 }
