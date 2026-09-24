@@ -5,12 +5,14 @@ import { Screen, Card, Kicker, Row, Stack, Button, Avatar } from '../../src/ui/p
 import { T } from '../../src/ui/Text';
 import { Icon } from '../../src/ui/Icon';
 import { useColors } from '../../src/theme/ThemeProvider';
-import { useWeek } from '../../src/data/hooks';
+import { useWeek, useAnswerState } from '../../src/data/hooks';
 
 export default function ThisWeek() {
   const c = useColors();
   const router = useRouter();
   const { data: w } = useWeek();
+  const { data: answerState } = useAnswerState();
+  const youAnswered = answerState?.answered ?? false;
   if (!w) return <Screen><View /></Screen>;
 
   return (
@@ -36,10 +38,10 @@ export default function ThisWeek() {
           <Kicker>The question</Kicker>
           <T variant="t2" style={{ marginTop: 8 }}>{w.question}</T>
           <T variant="body" color={c.text2} style={{ marginTop: 8 }}>
-            {w.youAnswered ? 'You’ve written yours.' : 'You haven’t written yours yet.'}
+            {youAnswered ? 'You’ve written yours.' : 'You haven’t written yours yet.'}
           </T>
           <View style={{ marginTop: 12 }}>
-            <Button label={w.youAnswered ? 'See everyone’s answers' : 'Write your answer'}
+            <Button label={youAnswered ? 'See everyone’s answers' : 'Write your answer'}
               onPress={() => router.push('/question')} />
           </View>
         </Card>
