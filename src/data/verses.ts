@@ -1,6 +1,9 @@
-// Verse finder content. A curated map of feelings/topics to REAL passages,
-// quoted from the World English Bible (public domain). The app only surfaces
-// these — it never writes or paraphrases Scripture. Leaders can extend this list.
+// Verse finder content: a curated map of feelings/topics to REAL passages.
+// References are the source of truth. When the ESV API is configured, the app
+// fetches licensed ESV text at runtime (see esv.ts); otherwise it shows the
+// World English Bible text below, which is public domain and bundled as an
+// offline fallback. The app only surfaces real Scripture — it never writes or
+// paraphrases it. Leaders can extend this list.
 export type Verse = { ref: string; text: string };
 export type Topic = { id: string; label: string; keywords: string[]; verses: Verse[] };
 export const source = 'World English Bible';

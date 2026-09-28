@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Pressable, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -8,6 +8,7 @@ import { Icon } from '../../src/ui/Icon';
 import { useColors } from '../../src/theme/ThemeProvider';
 import { usePresence, usePrayers } from '../../src/data/hooks';
 import { topics, searchVerses, source } from '../../src/data/verses';
+import { fetchEsv, ESV_LABEL, ESV_NOTICE } from '../../src/data/esv';
 import { TextInput } from 'react-native';
 import { repo } from '../../src/data/repo';
 
@@ -122,6 +123,24 @@ function VerseFinder() {
   const c = useColors();
   const [q, setQ] = useState('');
   const { topic, results } = searchVerses(q);
+  const [esv, setEsv] = useState<Record<string, string>>({});
+  const [usingEsv, setUsingEsv] = useState(false);
+
+  // When a topic resolves, fetch the licensed ESV text for its references.
+  // Falls back silently to the bundled public-domain text if ESV isn't set up.
+  useEffect(() => {
+    let live = true;
+    const refs = results.map((v) => v.ref);
+    if (refs.length === 0) { setEsv({}); setUsingEsv(false); return; }
+    fetchEsv(refs).then((map) => {
+      if (!live) return;
+      setEsv(map);
+      setUsingEsv(Object.keys(map).length > 0);
+    });
+    return () => { live = false; };
+  }, [q]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const translation = usingEsv ? ESV_LABEL : source;
   return (
     <Feed>
       <View style={{ height: 56, borderRadius: 28, backgroundColor: c.surface, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20 }}>
@@ -133,7 +152,7 @@ function VerseFinder() {
         <Icon name="info" size={18} color={c.sageInk} strokeWidth={2} />
         <T variant="body" style={{ flex: 1, fontSize: 14.5, lineHeight: 21 }}>
           These are passages found in Scripture, shown as they’re written. Tuesday Night never writes a verse for you.{'  '}
-          <T variant="body" color={c.text2} style={{ fontSize: 14.5 }}>{source}</T>
+          <T variant="body" color={c.text2} style={{ fontSize: 14.5 }}>{translation}</T>
         </T>
       </Row>
 
@@ -141,7 +160,7 @@ function VerseFinder() {
         <>
           <Kicker style={{ marginTop: 20 }}>Start with a feeling</Kicker>
           <Row gap={9} style={{ marginTop: 12, flexWrap: 'wrap' }}>
-            {topics.map(tp => (
+            {topics.map((tp) => (
               <Pressable key={tp.id} onPress={() => setQ(tp.label)}
                 style={{ height: 40, borderRadius: 20, backgroundColor: c.surface, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' }}>
                 <T variant="body" style={{ fontWeight: '600', fontSize: 15 }}>{tp.label}</T>
@@ -157,18 +176,22 @@ function VerseFinder() {
         <>
           {topic ? <Kicker style={{ marginTop: 18 }}>For when you’re {topic.label.toLowerCase()}</Kicker> : null}
           <Stack gap={10} style={{ marginTop: 12 }}>
-            {results.map(v => (
+            {results.map((v) => (
               <Card key={v.ref} pad={14}>
                 <Kicker color={c.accent}>{v.ref}</Kicker>
-                <T variant="scripture" style={{ fontSize: 15.5, lineHeight: 25, marginTop: 8 }}>{v.text}</T>
+                <T variant="scripture" style={{ fontSize: 15.5, lineHeight: 25, marginTop: 8 }}>{esv[v.ref] ?? v.text}</T>
               </Card>
             ))}
           </Stack>
+          <T variant="body" color={c.text2} style={{ marginTop: 14, fontSize: 12.5, lineHeight: 18 }}>
+            {usingEsv ? ESV_NOTICE : `${source} · public domain`}
+          </T>
         </>
       )}
     </Feed>
   );
 }
+
 
 function PhotoBlock({ height }: { height: number }) {
   const c = useColors();
