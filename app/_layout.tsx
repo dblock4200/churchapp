@@ -53,6 +53,8 @@ function RootStack() {
         <Stack.Screen name="new-event" options={{ presentation: 'modal' }} />
         <Stack.Screen name="partner" />
         <Stack.Screen name="new-challenge" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="record-talk" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="talk" />
       </Stack>
     </>
   );

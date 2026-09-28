@@ -35,3 +35,13 @@ export const usePartnership = () => {
   const { member } = useAuth();
   return useQuery({ queryKey: ['partnership', member?.id], enabled: !!member?.id, queryFn: () => repo.getPartnership(member?.id) });
 };
+
+export const useTalk = () => {
+  const { data: w } = useWeek();
+  const weekId = (w as any)?.id;
+  return useQuery({
+    queryKey: ['talk', weekId], enabled: !!weekId,
+    queryFn: () => repo.getTalk(weekId),
+    refetchInterval: (q: any) => (q.state.data?.status === 'processing' ? 4000 : false),
+  });
+};

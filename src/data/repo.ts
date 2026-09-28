@@ -264,6 +264,38 @@ export const repo = {
     return error ? { error: error.message } : {};
   },
 
+  // ── The talk (record → AI notes) ──────────────────────────────────────
+  async getTalk(weekId?: string) {
+    if (!supabase) return null;
+    let q = supabase.from('talks')
+      .select('id, status, summary, key_points, passages, duration_seconds, created_at, recorded_by, members(display_name)')
+      .order('created_at', { ascending: false }).limit(1);
+    if (weekId) q = q.eq('week_id', weekId);
+    const { data } = await q.maybeSingle();
+    if (!data) return null;
+    return {
+      id: data.id, status: data.status as 'processing' | 'ready' | 'failed',
+      summary: data.summary ?? '', keyPoints: (data.key_points ?? []) as string[], passages: (data.passages ?? []) as string[],
+      durationSeconds: data.duration_seconds ?? 0, by: (data as any).members?.display_name ?? '',
+    };
+  },
+  async startTalk(groupId: string, weekId: string | null, memberId: string, fileUri: string, durationSeconds: number): Promise<{ error?: string; talkId?: string }> {
+    if (!supabase) return { error: 'Not connected' };
+    const path = `${groupId}/${Date.now()}_${Math.random().toString(36).slice(2)}.m4a`;
+    const blob = await (await fetch(fileUri)).blob();
+    const up = await supabase.storage.from('talks').upload(path, blob, { contentType: 'audio/m4a' });
+    if (up.error) return { error: up.error.message };
+    const ins = await supabase.from('talks').insert({ group_id: groupId, week_id: weekId, recorded_by: memberId, audio_path: path, duration_seconds: durationSeconds, status: 'processing' }).select('id').single();
+    if (ins.error) return { error: ins.error.message };
+    supabase.functions.invoke('transcribe-talk', { body: { talkId: ins.data.id } }).catch(() => {});
+    return { talkId: ins.data.id };
+  },
+  async retryTalk(talkId: string) {
+    if (!supabase) return;
+    await supabase.from('talks').update({ status: 'processing', error: null }).eq('id', talkId);
+    supabase.functions.invoke('transcribe-talk', { body: { talkId } }).catch(() => {});
+  },
+
   // ── Accountability partner ────────────────────────────────────────────
   async getPartnership(myMemberId?: string) {
     if (!supabase || !myMemberId) return null;

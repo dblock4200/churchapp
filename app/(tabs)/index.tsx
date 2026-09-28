@@ -6,7 +6,7 @@ import { Screen, Card, Kicker, Row, Stack, Button, Avatar } from '../../src/ui/p
 import { T } from '../../src/ui/Text';
 import { Icon } from '../../src/ui/Icon';
 import { useColors } from '../../src/theme/ThemeProvider';
-import { useWeek, useAnswerState, useRsvps } from '../../src/data/hooks';
+import { useWeek, useAnswerState, useRsvps, useTalk } from '../../src/data/hooks';
 import { useAuth } from '../../src/auth/AuthProvider';
 import { repo } from '../../src/data/repo';
 
@@ -17,6 +17,7 @@ export default function ThisWeek() {
   const { data: w, isLoading } = useWeek();
   const { data: answerState } = useAnswerState();
   const { data: rsvps } = useRsvps();
+  const { data: talk } = useTalk();
   const qc = useQueryClient();
   const youAnswered = answerState?.answered ?? false;
   const isLeader = member?.is_leader ?? false;
@@ -67,6 +68,35 @@ export default function ThisWeek() {
             <T variant="body" color={c.accent} style={{ fontWeight: '700' }}>Read the passage</T>
           </Row>
         </Card>
+
+        <Pressable onPress={() => router.push(talk ? '/talk' : '/record-talk')}>
+          <Card pad={14}>
+            <Kicker color={c.text2}>This week’s talk</Kicker>
+            {!talk ? (
+              <>
+                <T variant="t3" style={{ marginTop: 6 }}>Not recorded yet</T>
+                <Row gap={8} style={{ marginTop: 10 }}>
+                  <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: c.accent, alignItems: 'center', justifyContent: 'center' }}>
+                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: c.onAccent }} />
+                  </View>
+                  <T variant="body" color={c.accent} style={{ fontWeight: '700' }}>Record the talk</T>
+                </Row>
+              </>
+            ) : talk.status === 'processing' ? (
+              <Row gap={8} style={{ marginTop: 8, alignItems: 'center' }}>
+                <ActivityIndicator color={c.accent} size="small" />
+                <T variant="body" color={c.text2}>Writing the notes…</T>
+              </Row>
+            ) : talk.status === 'failed' ? (
+              <T variant="body" color={c.accent} style={{ marginTop: 8, fontWeight: '700' }}>Notes didn’t finish — tap to retry</T>
+            ) : (
+              <>
+                <T variant="body" style={{ marginTop: 8, fontSize: 16, lineHeight: 23 }} numberOfLines={2}>{talk.summary}</T>
+                <T variant="body" color={c.accent} style={{ marginTop: 8, fontWeight: '700' }}>Read the notes</T>
+              </>
+            )}
+          </Card>
+        </Pressable>
 
         <Card pad={14}>
           <Kicker>The question</Kicker>
