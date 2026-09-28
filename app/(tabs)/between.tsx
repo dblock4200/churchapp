@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { View, Pressable, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { Screen, Card, Kicker, Row, Stack, Button, PersonLine, Hairline } from '../../src/ui/primitives';
 import { T } from '../../src/ui/Text';
 import { Icon } from '../../src/ui/Icon';
 import { useColors } from '../../src/theme/ThemeProvider';
 import { usePresence, usePrayers, useVerses } from '../../src/data/hooks';
+import { repo } from '../../src/data/repo';
 
 type Seg = 'Presence' | 'Prayer' | 'Verses';
 
@@ -45,67 +47,71 @@ function Feed({ children, primary, onPrimary }: { children: React.ReactNode; pri
   );
 }
 
-function PresenceFeed() {
+function Empty({ line }: { line: string }) {
   const c = useColors();
+  return <T variant="body" color={c.text2} style={{ marginTop: 30, textAlign: 'center', fontSize: 16, lineHeight: 24 }}>{line}</T>;
+}
+
+function PresenceFeed() {
   const router = useRouter();
-  const { data } = usePresence();
-  if (!data) return null;
-  const today = data.filter(p => p.day === 'Today');
-  const earlier = data.filter(p => p.day !== 'Today');
+  const { data, isLoading } = usePresence();
+  const posts = (data ?? []) as any[];
+  let lastDay = '';
   return (
     <Feed primary="Something you noticed" onPrimary={() => router.push('/compose')}>
-      <Stack gap={12}>
-        <Kicker>Today</Kicker>
-        {today.map(p => (
-          <Pressable key={p.id} onPress={() => router.push(`/post/${p.id}`)}>
-            <Card pad={16}>
-              <PersonLine name={p.author} meta={p.when} />
-              <T variant="body" style={{ fontSize: 17, lineHeight: 26, marginTop: 10 }}>{p.text}</T>
-              {p.hasPhoto ? <PhotoBlock height={128} /> : null}
-            </Card>
-          </Pressable>
-        ))}
-        {earlier.map(p => (
-          <View key={p.id}>
-            <View style={{ marginTop: 4, marginBottom: 8 }}><Kicker>{p.day}</Kicker></View>
-            <Pressable onPress={() => router.push(`/post/${p.id}`)}>
-              <Card pad={16}>
-                <PersonLine name={p.author} meta={p.when} />
-                <T variant="body" style={{ fontSize: 17, lineHeight: 26, marginTop: 10 }}>{p.text}</T>
-              </Card>
-            </Pressable>
-          </View>
-        ))}
-      </Stack>
+      {isLoading ? null : posts.length === 0 ? (
+        <Empty line="Nothing yet. When someone notices God in their week — a song, a small answer — it shows up here." />
+      ) : (
+        <Stack gap={12}>
+          {posts.map(p => {
+            const header = p.day !== lastDay ? p.day : null; lastDay = p.day;
+            return (
+              <View key={p.id}>
+                {header ? <View style={{ marginBottom: 8, marginTop: header && posts.indexOf(p) ? 6 : 0 }}><Kicker>{header}</Kicker></View> : null}
+                <Pressable onPress={() => router.push(`/post/${p.id}`)}>
+                  <Card pad={16}>
+                    <PersonLine name={p.author} meta={p.when} />
+                    <T variant="body" style={{ fontSize: 17, lineHeight: 26, marginTop: 10 }}>{p.text}</T>
+                    {p.hasPhoto ? <PhotoBlock height={128} /> : null}
+                  </Card>
+                </Pressable>
+              </View>
+            );
+          })}
+        </Stack>
+      )}
     </Feed>
   );
 }
 
 function PrayerWall() {
   const c = useColors();
-  const { data } = usePrayers();
-  if (!data) return null;
+  const router = useRouter();
+  const qc = useQueryClient();
+  const { data, isLoading } = usePrayers();
+  const prayers = (data ?? []) as any[];
+  async function markAnswered(id: string) { await repo.markPrayerAnswered(id); qc.invalidateQueries({ queryKey: ['prayers'] }); }
   return (
-    <Feed primary="Ask the group to pray">
-      <Stack gap={10}>
-        {data.map(p => (
-          <Card key={p.id} pad={15}>
-            <PersonLine name={p.author} meta={p.when} />
-            <T variant="body" style={{ fontSize: 16, lineHeight: 24, marginTop: 8 }}>{p.text}</T>
-            {p.onBehalfOf ? <T variant="kicker" color={c.text2} style={{ marginTop: 8 }}>On behalf of {p.onBehalfOf}</T> : null}
-            {p.followUp ? (
-              <View style={{ marginTop: 12, borderRadius: 16, backgroundColor: c.surface2, padding: 13, borderLeftWidth: 3, borderLeftColor: c.clay }}>
-                <T variant="kicker" color={c.clay}>Checking back</T>
-                <T variant="body" style={{ marginTop: 6 }}>{p.followUp.prompt}</T>
-                <Row gap={10} style={{ marginTop: 10 }}>
-                  <Pill label="Add an update" color={c.accent} bg={c.surface} />
-                  <Pill label="Still waiting" color={c.text2} bg={c.surface} />
-                </Row>
-              </View>
-            ) : null}
-          </Card>
-        ))}
-      </Stack>
+    <Feed primary="Ask the group to pray" onPrimary={() => router.push('/pray')}>
+      {isLoading ? null : prayers.length === 0 ? (
+        <Empty line="No requests yet. When someone needs prayer — for themselves or someone outside the group — it’ll be here." />
+      ) : (
+        <Stack gap={10}>
+          {prayers.map(p => (
+            <Card key={p.id} pad={15}>
+              <PersonLine name={p.author} meta={p.when} metaColor={p.answered ? c.green : c.text2} />
+              <T variant="body" style={{ fontSize: 16, lineHeight: 24, marginTop: 8 }}>{p.text}</T>
+              {p.onBehalfOf ? <T variant="kicker" color={c.text2} style={{ marginTop: 8 }}>On behalf of {p.onBehalfOf}</T> : null}
+              <Row style={{ marginTop: 10, justifyContent: 'space-between', alignItems: 'center' }}>
+                {p.answered
+                  ? <Row gap={6}><Icon name="check" size={16} color={c.green} strokeWidth={2.4} /><T variant="kicker" color={c.green}>Answered</T></Row>
+                  : <View />}
+                {!p.answered ? <Pressable onPress={() => markAnswered(p.id)}><T variant="body" color={c.accent} style={{ fontSize: 14, fontWeight: '700' }}>Mark answered</T></Pressable> : <View />}
+              </Row>
+            </Card>
+          ))}
+        </Stack>
+      )}
     </Feed>
   );
 }
@@ -137,14 +143,6 @@ function VerseFinder() {
         ))}
       </Stack>
     </Feed>
-  );
-}
-
-function Pill({ label, color, bg }: { label: string; color: string; bg: string }) {
-  return (
-    <View style={{ flex: 1, height: 40, borderRadius: 20, backgroundColor: bg, alignItems: 'center', justifyContent: 'center' }}>
-      <T variant="body" color={color} style={{ fontSize: 15, fontWeight: '700' }}>{label}</T>
-    </View>
   );
 }
 

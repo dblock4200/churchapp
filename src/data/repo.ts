@@ -12,6 +12,19 @@ function whenLabel(iso: string): string {
   return d.toLocaleDateString([], { weekday: 'long' });
 }
 
+function timeLabel(iso: string): string {
+  return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase();
+}
+function dayLabel(iso: string): string {
+  const d = new Date(iso); const now = new Date();
+  const day = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diff = Math.round((day(now) - day(d)) / 86400000);
+  if (diff <= 0) return 'Today';
+  if (diff === 1) return 'Yesterday';
+  if (diff < 7) return d.toLocaleDateString([], { weekday: 'long' });
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
 export type AnswerState = {
   answered: boolean; count: number;
   mine: { id: string; text: string; when: string } | null;
@@ -80,9 +93,63 @@ export const repo = {
     const { error } = await supabase.from('answers').insert({ week_id: weekId, member_id: memberId, body: body.trim() });
     return error ? { error: error.message } : {};
   },
-  getPresence: () => ok(mock.presence),
-  getPost: (id: string) => ok(mock.presence.find(p => p.id === id) ?? mock.presence[0]),
-  getPrayers: () => ok(mock.prayers),
+  async getPresence() {
+    if (!supabase) return mock.presence as any[];
+    const { data } = await supabase.from('presence_posts')
+      .select('id, body, photo_path, created_at, members(display_name)')
+      .is('deleted_at', null).order('created_at', { ascending: false });
+    return (data ?? []).map((r: any) => ({
+      id: r.id, author: r.members?.display_name ?? 'Someone',
+      when: timeLabel(r.created_at), day: dayLabel(r.created_at),
+      text: r.body, hasPhoto: !!r.photo_path,
+    }));
+  },
+  async getPost(id: string) {
+    if (!supabase) return mock.presence.find(p => p.id === id) ?? mock.presence[0];
+    const { data: p } = await supabase.from('presence_posts')
+      .select('id, body, photo_path, created_at, members(display_name)').eq('id', id).maybeSingle();
+    if (!p) return null;
+    const { data: reps } = await supabase.from('post_replies')
+      .select('id, body, created_at, members(display_name)').eq('post_id', id).is('deleted_at', null)
+      .order('created_at', { ascending: true });
+    return {
+      id: p.id, author: (p as any).members?.display_name ?? 'Someone',
+      when: timeLabel(p.created_at), day: dayLabel(p.created_at), text: p.body, hasPhoto: !!p.photo_path,
+      replies: (reps ?? []).map((r: any) => ({ id: r.id, author: r.members?.display_name ?? 'Someone', when: timeLabel(r.created_at), text: r.body })),
+    };
+  },
+  async addPost(groupId: string, memberId: string, body: string): Promise<{ error?: string }> {
+    if (!supabase) return { error: 'Not connected' };
+    const { error } = await supabase.from('presence_posts').insert({ group_id: groupId, member_id: memberId, body: body.trim() });
+    return error ? { error: error.message } : {};
+  },
+  async addReply(postId: string, memberId: string, body: string): Promise<{ error?: string }> {
+    if (!supabase) return { error: 'Not connected' };
+    const { error } = await supabase.from('post_replies').insert({ post_id: postId, member_id: memberId, body: body.trim() });
+    return error ? { error: error.message } : {};
+  },
+  async getPrayers() {
+    if (!supabase) return mock.prayers as any[];
+    const { data } = await supabase.from('prayer_requests')
+      .select('id, body, on_behalf_of, answered_at, created_at, members(display_name)')
+      .is('deleted_at', null).order('created_at', { ascending: false });
+    return (data ?? []).map((r: any) => ({
+      id: r.id, author: r.members?.display_name ?? 'Someone', when: dayLabel(r.created_at),
+      text: r.body, onBehalfOf: r.on_behalf_of ?? undefined, answered: !!r.answered_at,
+    }));
+  },
+  async addPrayer(groupId: string, memberId: string, body: string, onBehalfOf?: string): Promise<{ error?: string }> {
+    if (!supabase) return { error: 'Not connected' };
+    const { error } = await supabase.from('prayer_requests').insert({
+      group_id: groupId, member_id: memberId, body: body.trim(), on_behalf_of: onBehalfOf?.trim() || null,
+    });
+    return error ? { error: error.message } : {};
+  },
+  async markPrayerAnswered(id: string): Promise<{ error?: string }> {
+    if (!supabase) return { error: 'Not connected' };
+    const { error } = await supabase.from('prayer_requests').update({ answered_at: new Date().toISOString() }).eq('id', id);
+    return error ? { error: error.message } : {};
+  },
   getVerses: () => ok({ query: mock.verseQuery, source: mock.verseSource, results: mock.verses }),
 
   async getRsvps(weekId?: string, memberId?: string): Promise<{ coming: string[]; count: number; mine: 'yes' | 'no' | null }> {

@@ -48,6 +48,7 @@ function RootStack() {
         <Stack.Screen name="set-week" options={{ presentation: 'modal' }} />
         <Stack.Screen name="post/[id]" />
         <Stack.Screen name="compose" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="pray" options={{ presentation: 'modal' }} />
       </Stack>
     </>
   );
