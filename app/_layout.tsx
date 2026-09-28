@@ -1,4 +1,7 @@
 import 'react-native-gesture-handler';
+import { useFonts, Fredoka_500Medium, Fredoka_600SemiBold } from '@expo-google-fonts/fredoka';
+import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold } from '@expo-google-fonts/nunito';
+import { Literata_400Regular, Literata_500Medium } from '@expo-google-fonts/literata';
 import React, { useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
@@ -61,6 +64,12 @@ function RootStack() {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    Fredoka_500Medium, Fredoka_600SemiBold,
+    Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold,
+    Literata_400Regular, Literata_500Medium,
+  });
+  if (!fontsLoaded) return null;
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>

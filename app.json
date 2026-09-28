@@ -36,7 +36,8 @@
       "expo-notifications",
       "expo-font",
       "expo-web-browser",
-      "expo-audio"
+      "expo-audio",
+      "expo-splash-screen"
     ],
     "experiments": {
       "typedRoutes": true

@@ -6,7 +6,9 @@ import { Screen, Card, Kicker, Row, Stack, Button, PersonLine, Hairline } from '
 import { T } from '../../src/ui/Text';
 import { Icon } from '../../src/ui/Icon';
 import { useColors } from '../../src/theme/ThemeProvider';
-import { usePresence, usePrayers, useVerses } from '../../src/data/hooks';
+import { usePresence, usePrayers } from '../../src/data/hooks';
+import { topics, searchVerses, source } from '../../src/data/verses';
+import { TextInput } from 'react-native';
 import { repo } from '../../src/data/repo';
 
 type Seg = 'Presence' | 'Prayer' | 'Verses';
@@ -118,30 +120,52 @@ function PrayerWall() {
 
 function VerseFinder() {
   const c = useColors();
-  const { data } = useVerses();
-  if (!data) return null;
+  const [q, setQ] = useState('');
+  const { topic, results } = searchVerses(q);
   return (
     <Feed>
-      <View style={{ height: 56, borderRadius: 28, backgroundColor: c.surface, flexDirection: 'row',
-        alignItems: 'center', gap: 12, paddingHorizontal: 20 }}>
+      <View style={{ height: 56, borderRadius: 28, backgroundColor: c.surface, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20 }}>
         <Icon name="search" size={22} color={c.accent} strokeWidth={2} />
-        <T variant="body">{data.query}</T>
+        <TextInput value={q} onChangeText={setQ} placeholder="What’s on your mind?" placeholderTextColor={c.text2}
+          style={{ flex: 1, color: c.text, fontSize: 16 }} />
       </View>
       <Row gap={9} style={{ marginTop: 14, alignItems: 'flex-start', borderRadius: 16, backgroundColor: c.sage, padding: 13 }}>
         <Icon name="info" size={18} color={c.sageInk} strokeWidth={2} />
         <T variant="body" style={{ flex: 1, fontSize: 14.5, lineHeight: 21 }}>
           These are passages found in Scripture, shown as they’re written. Tuesday Night never writes a verse for you.{'  '}
-          <T variant="body" color={c.text2} style={{ fontSize: 14.5 }}>{data.source}</T>
+          <T variant="body" color={c.text2} style={{ fontSize: 14.5 }}>{source}</T>
         </T>
       </Row>
-      <Stack gap={10} style={{ marginTop: 16 }}>
-        {data.results.map(v => (
-          <Card key={v.ref} pad={14}>
-            <Kicker color={c.accent}>{v.ref}</Kicker>
-            <T variant="scripture" style={{ fontSize: 15.5, lineHeight: 25, marginTop: 8 }}>{v.text}</T>
-          </Card>
-        ))}
-      </Stack>
+
+      {q.trim() === '' ? (
+        <>
+          <Kicker style={{ marginTop: 20 }}>Start with a feeling</Kicker>
+          <Row gap={9} style={{ marginTop: 12, flexWrap: 'wrap' }}>
+            {topics.map(tp => (
+              <Pressable key={tp.id} onPress={() => setQ(tp.label)}
+                style={{ height: 40, borderRadius: 20, backgroundColor: c.surface, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' }}>
+                <T variant="body" style={{ fontWeight: '600', fontSize: 15 }}>{tp.label}</T>
+              </Pressable>
+            ))}
+          </Row>
+        </>
+      ) : results.length === 0 ? (
+        <T variant="body" color={c.text2} style={{ marginTop: 20, fontSize: 16, lineHeight: 24 }}>
+          Nothing matched “{q}”. Try a feeling like anxious, angry, grateful, weary, or lonely.
+        </T>
+      ) : (
+        <>
+          {topic ? <Kicker style={{ marginTop: 18 }}>For when you’re {topic.label.toLowerCase()}</Kicker> : null}
+          <Stack gap={10} style={{ marginTop: 12 }}>
+            {results.map(v => (
+              <Card key={v.ref} pad={14}>
+                <Kicker color={c.accent}>{v.ref}</Kicker>
+                <T variant="scripture" style={{ fontSize: 15.5, lineHeight: 25, marginTop: 8 }}>{v.text}</T>
+              </Card>
+            ))}
+          </Stack>
+        </>
+      )}
     </Feed>
   );
 }
