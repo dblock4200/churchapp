@@ -15,6 +15,12 @@ function whenLabel(iso: string): string {
 function timeLabel(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase();
 }
+function dateBox(d: Date): { dow: string; day: string } {
+  return { dow: d.toLocaleDateString([], { weekday: 'short' }).toUpperCase(), day: String(d.getDate()) };
+}
+function timeText(d: Date): string {
+  return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase();
+}
 function dayLabel(iso: string): string {
   const d = new Date(iso); const now = new Date();
   const day = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
@@ -188,4 +194,80 @@ export const repo = {
     const { error } = await supabase.from('weeks').insert(row);
     return error ? { error: error.message } : {};
   },
+
+  async getSchedule() {
+    if (!supabase) return [] as any[];
+    const [{ data: weeks }, { data: events }] = await Promise.all([
+      supabase.from('weeks').select('id, starts_on, host_when, host_member_id'),
+      supabase.from('events').select('id, kind, title, place, starts_at, created_by, members!events_created_by_fkey(display_name), event_rsvps(going)').is('deleted_at', null),
+    ]);
+    const weekIds = (weeks ?? []).map((w: any) => w.id);
+    const rsvpCount: Record<string, number> = {};
+    if (weekIds.length) {
+      const { data: rs } = await supabase.from('rsvps').select('week_id, coming').in('week_id', weekIds);
+      (rs ?? []).forEach((r: any) => { if (r.coming) rsvpCount[r.week_id] = (rsvpCount[r.week_id] || 0) + 1; });
+    }
+    const hostIds = [...new Set((weeks ?? []).map((w: any) => w.host_member_id).filter(Boolean))];
+    const hostName: Record<string, string> = {};
+    if (hostIds.length) {
+      const { data: hs } = await supabase.from('members').select('id, display_name').in('id', hostIds as any);
+      (hs ?? []).forEach((h: any) => { hostName[h.id] = h.display_name; });
+    }
+    const items: any[] = [];
+    (weeks ?? []).forEach((w: any) => {
+      const d = new Date((w.starts_on || '') + 'T19:00:00');
+      const host = w.host_member_id ? hostName[w.host_member_id] : '';
+      items.push({ key: 'w' + w.id, kind: 'gathering', id: w.id, title: 'Tuesday Night',
+        meta: [w.host_when, host ? host + '’s house' : ''].filter(Boolean).join(' · '),
+        date: d, box: dateBox(d), going: rsvpCount[w.id] || 0 });
+    });
+    (events ?? []).forEach((e: any) => {
+      const d = new Date(e.starts_at);
+      const going = (e.event_rsvps || []).filter((r: any) => r.going).length;
+      items.push({ key: 'e' + e.id, kind: e.kind, id: e.id, title: e.title,
+        meta: [timeText(d), e.place, e.members?.display_name].filter(Boolean).join(' · '),
+        date: d, box: dateBox(d), going });
+    });
+    items.sort((a, b) => a.date.getTime() - b.date.getTime());
+    return items.map(({ date, ...rest }) => rest);
+  },
+
+  async getEvent(id: string) {
+    if (!supabase) return null;
+    const { data: e } = await supabase.from('events')
+      .select('id, kind, title, place, starts_at, note, created_by, members!events_created_by_fkey(display_name)').eq('id', id).maybeSingle();
+    if (!e) return null;
+    const { data: rs } = await supabase.from('event_rsvps').select('going, member_id, members(display_name)').eq('event_id', id);
+    const d = new Date(e.starts_at);
+    const going = (rs ?? []).filter((r: any) => r.going).map((r: any) => r.members?.display_name ?? 'Someone');
+    const cant = (rs ?? []).filter((r: any) => !r.going).map((r: any) => r.members?.display_name ?? 'Someone');
+    return {
+      id: e.id, kind: e.kind, title: e.title, place: e.place ?? '', note: e.note ?? '',
+      by: (e as any).members?.display_name ?? '', createdBy: e.created_by,
+      dateLabel: d.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' }),
+      timeLabel: timeText(d), going, cant,
+    };
+  },
+
+  async addEvent(f: { kind: 'meetup' | 'event'; groupId: string; memberId: string; title: string; place?: string; startsAt: string; note?: string }): Promise<{ error?: string }> {
+    if (!supabase) return { error: 'Not connected' };
+    const { error } = await supabase.from('events').insert({
+      group_id: f.groupId, created_by: f.memberId, kind: f.kind, title: f.title.trim(),
+      place: f.place?.trim() || null, starts_at: f.startsAt, note: f.note?.trim() || null,
+    });
+    return error ? { error: error.message } : {};
+  },
+
+  async setEventRsvp(eventId: string, memberId: string, going: boolean): Promise<{ error?: string }> {
+    if (!supabase) return { error: 'Not connected' };
+    const { error } = await supabase.from('event_rsvps').upsert({ event_id: eventId, member_id: memberId, going }, { onConflict: 'event_id,member_id' });
+    return error ? { error: error.message } : {};
+  },
+
+  async myEventRsvp(eventId: string, memberId?: string): Promise<'yes' | 'no' | null> {
+    if (!supabase || !memberId) return null;
+    const { data } = await supabase.from('event_rsvps').select('going').eq('event_id', eventId).eq('member_id', memberId).maybeSingle();
+    return data ? (data.going ? 'yes' : 'no') : null;
+  },
 };
+

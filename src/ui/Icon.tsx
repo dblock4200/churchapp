@@ -5,7 +5,7 @@ import { useColors } from '../theme/ThemeProvider';
 export type IconName =
   | 'calendar' | 'bookmark' | 'person' | 'chevron-left' | 'chevron-right'
   | 'book' | 'send' | 'camera' | 'search' | 'info' | 'bell' | 'pencil'
-  | 'users' | 'close' | 'plus' | 'check' | 'heart' | 'sparkle' | 'speaker';
+  | 'users' | 'close' | 'plus' | 'check' | 'heart' | 'sparkle' | 'speaker' | 'agenda' | 'pin';
 
 type Props = { name: IconName; size?: number; color?: string; strokeWidth?: number };
 
@@ -55,6 +55,11 @@ function render(name: IconName, p: any, stroke: string) {
     case 'check': return <Path d="M5.5 12.5 10 17l8.5-9.5" {...p} />;
     case 'heart': return <Path d="M12 20.2c-.4 0-.7-.1-1-.4C8.2 17.3 4.4 14.1 4.4 10.4 4.4 8 6.2 6.2 8.5 6.2c1.4 0 2.6.6 3.5 1.7.9-1.1 2.1-1.7 3.5-1.7 2.3 0 4.1 1.8 4.1 4.2 0 3.7-3.8 6.9-6.6 9.4-.3.3-.6.4-1 .4Z" {...p} />;
     case 'sparkle': return <Path d="M12 4.2c.4 3.4 1.8 4.8 5.2 5.2-3.4.4-4.8 1.8-5.2 5.2-.4-3.4-1.8-4.8-5.2-5.2 3.4-.4 4.8-1.8 5.2-5.2z" {...p} />;
+    case 'agenda': return <>
+      <Path d="M4 6.5h16M4 12h16M4 17.5h10" {...p} /></>;
+    case 'pin': return <>
+      <Path d="M12 21c4.5-4.2 6.5-7 6.5-10a6.5 6.5 0 0 0-13 0c0 3 2 5.8 6.5 10z" {...p} />
+      <Circle cx="12" cy="11" r="2.2" {...p} /></>;
     case 'speaker': return <>
       <Path d="M11 5.6 6.9 9H4.4a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h2.5l4.1 3.4a.6.6 0 0 0 1-.5V6.1a.6.6 0 0 0-1-.5z" {...p} />
       <Path d="M15.6 9.4a3.6 3.6 0 0 1 0 5.2" {...p} /></>;

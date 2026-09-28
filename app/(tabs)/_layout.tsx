@@ -11,6 +11,7 @@ import { T } from '../../src/ui/Text';
 const TABS: { name: string; label: string; icon: IconName }[] = [
   { name: 'index', label: 'This Week', icon: 'calendar' },
   { name: 'between', label: 'Between', icon: 'bookmark' },
+  { name: 'schedule', label: 'Schedule', icon: 'agenda' },
   { name: 'you', label: 'You', icon: 'person' },
 ];
 
@@ -49,6 +50,7 @@ export default function TabsLayout() {
     <Tabs tabBar={(p) => <TabBar {...p} />} screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: c.ground } }}>
       <Tabs.Screen name="index" />
       <Tabs.Screen name="between" />
+      <Tabs.Screen name="schedule" />
       <Tabs.Screen name="you" />
     </Tabs>
   );

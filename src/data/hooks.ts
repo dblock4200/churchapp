@@ -27,3 +27,6 @@ export const useRsvps = () => {
   return useQuery({ queryKey: ['rsvps', weekId, member?.id], enabled: !!weekId, queryFn: () => repo.getRsvps(weekId, member?.id) });
 };
 export const useMembers = () => useQuery({ queryKey: ['members'], queryFn: repo.listMembers });
+
+export const useSchedule = () => useQuery({ queryKey: ['schedule'], queryFn: repo.getSchedule });
+export const useEvent = (id: string) => useQuery({ queryKey: ['event', id], queryFn: () => repo.getEvent(id) });
