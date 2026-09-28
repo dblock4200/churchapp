@@ -19,3 +19,11 @@ export function useAnswerState() {
     queryFn: () => repo.getAnswerState(weekId, memberId),
   });
 }
+
+export const useRsvps = () => {
+  const { data: w } = useWeek();
+  const { member } = useAuth();
+  const weekId = (w as any)?.id;
+  return useQuery({ queryKey: ['rsvps', weekId, member?.id], enabled: !!weekId, queryFn: () => repo.getRsvps(weekId, member?.id) });
+};
+export const useMembers = () => useQuery({ queryKey: ['members'], queryFn: repo.listMembers });

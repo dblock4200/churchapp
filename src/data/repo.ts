@@ -28,24 +28,25 @@ export const repo = {
         .order('starts_on', { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (data) {
-        return {
-          id: data.id,
-          groupName: (data as any).groups?.name ?? 'Tuesday Night',
-          memberCount: mock.week.memberCount,
-          passageRef: data.passage_ref,
-          question: data.question,
-          hostName: mock.week.hostName,
-          hostWhen: data.host_when ?? '',
-          comingCount: 0,
-          coming: [],
-          memoryVerseRef: data.memory_verse_ref ?? '',
-          memoryVerseText: data.memory_verse_text ?? '',
-          youAnswered: false,
-        };
+      if (!data) return null;                       // real DB, no week set yet -> empty state
+      let hostName = '';
+      if (data.host_member_id) {
+        const { data: h } = await supabase.from('members').select('display_name').eq('id', data.host_member_id).maybeSingle();
+        hostName = h?.display_name ?? '';
       }
+      return {
+        id: data.id as string,
+        groupName: (data as any).groups?.name ?? 'Tuesday Night',
+        passageRef: data.passage_ref as string,
+        question: data.question as string,
+        hostName,
+        hostMemberId: (data.host_member_id ?? null) as string | null,
+        hostWhen: (data.host_when ?? '') as string,
+        memoryVerseRef: (data.memory_verse_ref ?? '') as string,
+        memoryVerseText: (data.memory_verse_text ?? '') as string,
+      };
     }
-    return mock.week;
+    return mock.week as any;
   },
   getAnswers: () => ok(mock.answers),
 
@@ -83,4 +84,41 @@ export const repo = {
   getPost: (id: string) => ok(mock.presence.find(p => p.id === id) ?? mock.presence[0]),
   getPrayers: () => ok(mock.prayers),
   getVerses: () => ok({ query: mock.verseQuery, source: mock.verseSource, results: mock.verses }),
+
+  async getRsvps(weekId?: string, memberId?: string): Promise<{ coming: string[]; count: number; mine: 'yes' | 'no' | null }> {
+    if (!supabase || !weekId) return { coming: [], count: 0, mine: null };
+    const { data } = await supabase.from('rsvps').select('coming, member_id, members(display_name)').eq('week_id', weekId);
+    const rows = (data ?? []) as any[];
+    const coming = rows.filter(r => r.coming).map(r => r.members?.display_name ?? 'Someone');
+    const mineRow = rows.find(r => r.member_id === memberId);
+    return { coming, count: coming.length, mine: mineRow ? (mineRow.coming ? 'yes' : 'no') : null };
+  },
+
+  async setMyRsvp(weekId: string, memberId: string, coming: boolean): Promise<{ error?: string }> {
+    if (!supabase) return { error: 'Not connected' };
+    const { error } = await supabase.from('rsvps').upsert({ week_id: weekId, member_id: memberId, coming }, { onConflict: 'week_id,member_id' });
+    return error ? { error: error.message } : {};
+  },
+
+  async listMembers(): Promise<{ id: string; name: string; isLeader: boolean }[]> {
+    if (!supabase) return [];
+    const { data } = await supabase.from('members').select('id, display_name, is_leader').order('display_name');
+    return (data ?? []).map((m: any) => ({ id: m.id, name: m.display_name, isLeader: m.is_leader }));
+  },
+
+  async setWeek(f: { id?: string; groupId?: string; passageRef: string; question: string; hostMemberId?: string | null; hostWhen?: string; memoryVerseRef?: string; memoryVerseText?: string }): Promise<{ error?: string }> {
+    if (!supabase) return { error: 'Not connected' };
+    const row: any = {
+      passage_ref: f.passageRef.trim(), question: f.question.trim(),
+      host_member_id: f.hostMemberId ?? null, host_when: f.hostWhen?.trim() || null,
+      memory_verse_ref: f.memoryVerseRef?.trim() || null, memory_verse_text: f.memoryVerseText?.trim() || null,
+    };
+    if (f.id) {
+      const { error } = await supabase.from('weeks').update(row).eq('id', f.id);
+      return error ? { error: error.message } : {};
+    }
+    row.group_id = f.groupId; row.starts_on = new Date().toISOString().slice(0, 10);
+    const { error } = await supabase.from('weeks').insert(row);
+    return error ? { error: error.message } : {};
+  },
 };
