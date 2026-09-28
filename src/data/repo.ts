@@ -264,6 +264,76 @@ export const repo = {
     return error ? { error: error.message } : {};
   },
 
+  // ── Accountability partner ────────────────────────────────────────────
+  async getPartnership(myMemberId?: string) {
+    if (!supabase || !myMemberId) return null;
+    const { data } = await supabase.from('partnerships')
+      .select('id, status, member_a, member_b, requested_by, a:members!partnerships_member_a_fkey(display_name), b:members!partnerships_member_b_fkey(display_name)')
+      .neq('status', 'ended').limit(1).maybeSingle();
+    if (!data) return null;
+    const iAmA = data.member_a === myMemberId;
+    const partnerMemberId = iAmA ? data.member_b : data.member_a;
+    const partnerName = (iAmA ? (data as any).b : (data as any).a)?.display_name ?? 'your partner';
+    return {
+      id: data.id, status: data.status as 'pending' | 'active',
+      partnerMemberId, partnerName,
+      iRequested: data.requested_by === myMemberId,
+    };
+  },
+  async partnerCandidates(myMemberId?: string) {
+    if (!supabase || !myMemberId) return [];
+    const { data } = await supabase.from('members').select('id, display_name').neq('id', myMemberId).order('display_name');
+    return (data ?? []).map((m: any) => ({ id: m.id, name: m.display_name }));
+  },
+  async askPartner(groupId: string, myMemberId: string, partnerMemberId: string): Promise<{ error?: string }> {
+    if (!supabase) return { error: 'Not connected' };
+    const { error } = await supabase.from('partnerships').insert({ group_id: groupId, member_a: myMemberId, member_b: partnerMemberId, requested_by: myMemberId, status: 'pending' });
+    return error ? { error: error.message } : {};
+  },
+  async respondPartner(id: string, accept: boolean): Promise<{ error?: string }> {
+    if (!supabase) return { error: 'Not connected' };
+    const patch: any = accept ? { status: 'active' } : { status: 'ended', ended_at: new Date().toISOString() };
+    const { error } = await supabase.from('partnerships').update(patch).eq('id', id);
+    return error ? { error: error.message } : {};
+  },
+  async endPartnership(id: string) {
+    if (!supabase) return; await supabase.from('partnerships').update({ status: 'ended', ended_at: new Date().toISOString() }).eq('id', id);
+  },
+  async getFocus(partnershipId: string) {
+    if (!supabase) return {} as Record<string, string>;
+    const { data } = await supabase.from('partner_focus').select('member_id, body').eq('partnership_id', partnershipId);
+    const map: Record<string, string> = {}; (data ?? []).forEach((r: any) => { map[r.member_id] = r.body; }); return map;
+  },
+  async setFocus(partnershipId: string, memberId: string, body: string): Promise<{ error?: string }> {
+    if (!supabase) return { error: 'Not connected' };
+    const { error } = await supabase.from('partner_focus').upsert({ partnership_id: partnershipId, member_id: memberId, body: body.trim(), updated_at: new Date().toISOString() }, { onConflict: 'partnership_id,member_id' });
+    return error ? { error: error.message } : {};
+  },
+  async getPartnerMessages(partnershipId: string) {
+    if (!supabase) return [] as any[];
+    const { data } = await supabase.from('partner_messages').select('id, body, member_id, created_at, members(display_name)').eq('partnership_id', partnershipId).order('created_at', { ascending: true });
+    return (data ?? []).map((r: any) => ({ id: r.id, memberId: r.member_id, author: r.members?.display_name ?? 'Someone', when: timeText(new Date(r.created_at)), text: r.body }));
+  },
+  async addPartnerMessage(partnershipId: string, memberId: string, body: string): Promise<{ error?: string }> {
+    if (!supabase) return { error: 'Not connected' };
+    const { error } = await supabase.from('partner_messages').insert({ partnership_id: partnershipId, member_id: memberId, body: body.trim() });
+    return error ? { error: error.message } : {};
+  },
+  async getActiveChallenge(partnershipId: string) {
+    if (!supabase) return null;
+    const { data } = await supabase.from('challenges').select('id, kind, title, days, started_on').eq('partnership_id', partnershipId).eq('status', 'active').order('created_at', { ascending: false }).limit(1).maybeSingle();
+    if (!data) return null;
+    const start = new Date(data.started_on + 'T00:00:00'); const now = new Date();
+    const dayNum = Math.min(data.days, Math.max(1, Math.floor((now.getTime() - start.getTime()) / 86400000) + 1));
+    return { id: data.id, kind: data.kind, title: data.title, days: data.days, dayNum };
+  },
+  async startChallenge(partnershipId: string, memberId: string, kind: string, title: string, days: number): Promise<{ error?: string }> {
+    if (!supabase) return { error: 'Not connected' };
+    const { error } = await supabase.from('challenges').insert({ partnership_id: partnershipId, created_by: memberId, kind, title, days });
+    return error ? { error: error.message } : {};
+  },
+  async endChallenge(id: string) { if (supabase) await supabase.from('challenges').update({ status: 'ended' }).eq('id', id); },
+
   async myEventRsvp(eventId: string, memberId?: string): Promise<'yes' | 'no' | null> {
     if (!supabase || !memberId) return null;
     const { data } = await supabase.from('event_rsvps').select('going').eq('event_id', eventId).eq('member_id', memberId).maybeSingle();

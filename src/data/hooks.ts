@@ -30,3 +30,8 @@ export const useMembers = () => useQuery({ queryKey: ['members'], queryFn: repo.
 
 export const useSchedule = () => useQuery({ queryKey: ['schedule'], queryFn: repo.getSchedule });
 export const useEvent = (id: string) => useQuery({ queryKey: ['event', id], queryFn: () => repo.getEvent(id) });
+
+export const usePartnership = () => {
+  const { member } = useAuth();
+  return useQuery({ queryKey: ['partnership', member?.id], enabled: !!member?.id, queryFn: () => repo.getPartnership(member?.id) });
+};

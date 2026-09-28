@@ -1,17 +1,23 @@
 import React from 'react';
-import { View } from 'react-native';
-import { Screen, Card, Kicker, Row, Stack, Avatar, Hairline } from '../../src/ui/primitives';
+import { View, Pressable } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Screen, Card, Row, Avatar, Hairline } from '../../src/ui/primitives';
 import { T } from '../../src/ui/Text';
 import { Icon, IconName } from '../../src/ui/Icon';
 import { useColors } from '../../src/theme/ThemeProvider';
 import { useAuth } from '../../src/auth/AuthProvider';
+import { usePartnership } from '../../src/data/hooks';
 
-// The You tab wasn't in the mockup set — this is a first honest pass so the
-// third tab isn't empty: identity, the week-admin note, and quiet settings.
 export default function You() {
   const c = useColors();
+  const router = useRouter();
   const { member, signOut } = useAuth();
+  const { data: partnership } = usePartnership();
   const name = member?.display_name ?? 'You';
+
+  const partnerValue = partnership?.status === 'active' ? `with ${partnership.partnerName}`
+    : partnership?.status === 'pending' ? 'Pending' : 'Optional · not set up';
+
   return (
     <Screen>
       <Row style={{ minHeight: 46, marginTop: 8 }}><T variant="t1">You</T></Row>
@@ -28,15 +34,13 @@ export default function You() {
 
       <View style={{ marginTop: 22 }}>
         <SettingsGroup rows={[
-          { icon: 'calendar', tint: c.pill, ink: c.accent, label: 'Set this week', value: 'Leader' },
+          ...(member?.is_leader ? [{ icon: 'calendar' as IconName, tint: c.pill, ink: c.accent, label: 'Set this week', onPress: () => router.push('/set-week') }] : []),
+          { icon: 'users', tint: c.lilac, ink: c.lilacInk, label: 'Accountability partner', value: partnerValue, onPress: () => router.push('/partner') },
           { icon: 'bell', tint: c.butter, ink: c.butterInk, label: 'Reminders', value: 'Tue 5pm' },
-          { icon: 'person', tint: c.sage, ink: c.sageInk, label: 'Your name & photo' },
         ]} />
       </View>
       <View style={{ marginTop: 14 }}>
-        <SettingsGroup rows={[
-          { icon: 'info', tint: c.lilac, ink: c.lilacInk, label: 'About Tuesday Night' },
-        ]} />
+        <SettingsGroup rows={[{ icon: 'info', tint: c.sage, ink: c.sageInk, label: 'About Tuesday Night' }]} />
       </View>
 
       <View style={{ marginTop: 20, alignItems: 'center' }}>
@@ -46,21 +50,24 @@ export default function You() {
   );
 }
 
-function SettingsGroup({ rows }: { rows: { icon: IconName; tint: string; ink: string; label: string; value?: string }[] }) {
+type Rowt = { icon: IconName; tint: string; ink: string; label: string; value?: string; onPress?: () => void };
+function SettingsGroup({ rows }: { rows: Rowt[] }) {
   const c = useColors();
   return (
     <Card pad={0}>
       {rows.map((r, i) => (
         <View key={r.label}>
           {i > 0 ? <Hairline /> : null}
-          <Row gap={14} style={{ height: 62, paddingHorizontal: 16 }}>
-            <View style={{ width: 38, height: 38, borderRadius: 13, backgroundColor: r.tint, alignItems: 'center', justifyContent: 'center' }}>
-              <Icon name={r.icon} size={20} color={r.ink} strokeWidth={2} />
-            </View>
-            <T variant="body" style={{ flex: 1, fontWeight: '600' }}>{r.label}</T>
-            {r.value ? <T variant="body" color={c.text2}>{r.value}</T> : null}
-            <Icon name="chevron-right" size={18} color={c.text2} strokeWidth={2.2} />
-          </Row>
+          <Pressable onPress={r.onPress} disabled={!r.onPress}>
+            <Row gap={14} style={{ minHeight: 62, paddingHorizontal: 16, paddingVertical: 10 }}>
+              <View style={{ width: 38, height: 38, borderRadius: 13, backgroundColor: r.tint, alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name={r.icon} size={20} color={r.ink} strokeWidth={2} />
+              </View>
+              <T variant="body" style={{ flex: 1, fontWeight: '600' }}>{r.label}</T>
+              {r.value ? <T variant="body" color={c.text2} style={{ fontSize: 14 }}>{r.value}</T> : null}
+              {r.onPress ? <Icon name="chevron-right" size={18} color={c.text2} strokeWidth={2.2} /> : null}
+            </Row>
+          </Pressable>
         </View>
       ))}
     </Card>

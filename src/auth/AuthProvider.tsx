@@ -28,6 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data } = await supabase
       .from('members')
       .select('id, group_id, display_name, is_leader, groups(name)')
+      .eq('user_id', s.user.id)
       .limit(1)
       .maybeSingle();
     setMember(data ? {
