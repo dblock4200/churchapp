@@ -7,23 +7,18 @@
     "icon": "./assets/icon.png",
     "scheme": "anchor",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#12100E"
-    },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.veloaz.anchor"
+      "bundleIdentifier": "com.veloaz.inbetween",
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#12100E"
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundColor": "#12100E",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "package": "com.veloaz.anchor",
-      "edgeToEdgeEnabled": true
+      "package": "com.veloaz.inbetween"
     },
     "web": {
       "bundler": "metro",
@@ -36,9 +31,27 @@
       "expo-notifications",
       "expo-font",
       "expo-web-browser",
-      "expo-audio",
-      "expo-splash-screen",
-      "expo-image-picker"
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "In Between uses the microphone to record the week's talk so the group can get notes afterward."
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#12100E"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "In Between uses your photos so you can add one to something you share with the group."
+        }
+      ],
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true
