@@ -8,7 +8,7 @@ import { Icon } from '../../src/ui/Icon';
 import { useColors } from '../../src/theme/ThemeProvider';
 import { usePresence, usePrayers } from '../../src/data/hooks';
 import { topics, searchVerses, source } from '../../src/data/verses';
-import { fetchEsv, ESV_LABEL, ESV_NOTICE } from '../../src/data/esv';
+import { fetchEsv, ESV_LABEL, ESV_NOTICE, ESV_ENABLED } from '../../src/data/esv';
 import { TextInput } from 'react-native';
 import { repo } from '../../src/data/repo';
 
@@ -120,6 +120,33 @@ function PrayerWall() {
 }
 
 function VerseFinder() {
+  // The finished verse finder stays gated until the ESV key is live.
+  if (!ESV_ENABLED) return <VersesComingSoon />;
+  return <VerseFinderLive />;
+}
+
+function VersesComingSoon() {
+  const c = useColors();
+  return (
+    <Feed>
+      <View style={{ alignItems: 'center', paddingTop: 52, paddingHorizontal: 14 }}>
+        <View style={{ width: 76, height: 76, borderRadius: 38, backgroundColor: c.sage, alignItems: 'center', justifyContent: 'center' }}>
+          <Icon name="book" size={32} color={c.sageInk} strokeWidth={1.9} />
+        </View>
+        <T variant="t2" style={{ marginTop: 22, textAlign: 'center' }}>Verses are coming soon</T>
+        <T variant="body" color={c.text2} style={{ marginTop: 10, textAlign: 'center', fontSize: 16, lineHeight: 25 }}>
+          A gentle way to find Scripture for whatever you’re carrying — anxious, weary,
+          grateful, afraid — is on its way.
+        </T>
+        <T variant="body" color={c.text2} style={{ marginTop: 14, textAlign: 'center', fontSize: 14.5, lineHeight: 22 }}>
+          It will only ever show you passages as they’re written, never a verse we made up.
+        </T>
+      </View>
+    </Feed>
+  );
+}
+
+function VerseFinderLive() {
   const c = useColors();
   const [q, setQ] = useState('');
   const { topic, results } = searchVerses(q);

@@ -6,6 +6,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 
+// Master switch for the verse finder. Until the ESV API key is live and this
+// is turned on, the Verses tab shows a "coming soon" state instead of results.
+// Flip it by setting EXPO_PUBLIC_ESV_ENABLED=true (in .env) once ESV is approved
+// and the esv-passage function is deployed with its ESV_API_KEY secret.
+export const ESV_ENABLED = process.env.EXPO_PUBLIC_ESV_ENABLED === 'true';
+
 export const ESV_LABEL = 'ESV';
 // Crossway requires this notice wherever ESV text is displayed.
 export const ESV_NOTICE =
