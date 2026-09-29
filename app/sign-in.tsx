@@ -62,7 +62,7 @@ export default function SignIn() {
         <View style={{ width: 56, height: 56, borderRadius: 18, backgroundColor: c.pill, alignItems: 'center', justifyContent: 'center' }}>
           <Icon name="bookmark" size={26} color={c.accent} strokeWidth={2} />
         </View>
-        <T variant="t1" style={{ marginTop: 20 }}>Tuesday Night</T>
+        <T variant="t1" style={{ marginTop: 20 }}>In Between</T>
         <T variant="body" color={c.text2} style={{ marginTop: 8, fontSize: 17, lineHeight: 25 }}>
           {mode === 'signin'
             ? 'Welcome back. Sign in to see this week.'
@@ -106,7 +106,7 @@ export default function SignIn() {
         </View>
 
         <T variant="body" color={c.text2} style={{ marginTop: 18, textAlign: 'center', fontSize: 13.5, lineHeight: 20 }}>
-          Tuesday Night is invite-only — you’ll need a code from your group to join.
+          In Between is invite-only — you’ll need a code from your group to join.
         </T>
       </View>
     </SafeAreaView>

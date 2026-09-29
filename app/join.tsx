@@ -43,7 +43,7 @@ export default function Join() {
         </Stack>
         {err ? <T variant="body" color={c.clay} style={{ marginTop: 12 }}>{err}</T> : null}
         <View style={{ marginTop: 16, opacity: code.trim() && !busy ? 1 : 0.5 }} pointerEvents={code.trim() && !busy ? 'auto' : 'none'}>
-          <Button label={busy ? 'Joining…' : 'Join Tuesday Night'} onPress={join} />
+          <Button label={busy ? 'Joining…' : 'Join In Between'} onPress={join} />
         </View>
         <View style={{ marginTop: 14, alignItems: 'center' }}>
           <T variant="body" color={c.text2} onPress={signOut} style={{ fontSize: 14 }}>Sign out</T>

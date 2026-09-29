@@ -76,7 +76,7 @@ export default function NewEvent() {
         </Row>
         {label('A note (optional)')}{field(note, setNote, isEvent ? 'Details, cost, what to bring…' : 'Bring a blanket — kids welcome.', true)}
         {err ? <T variant="body" color={c.clay} style={{ marginTop: 14 }}>{err}</T> : null}
-        <View style={{ marginTop: 22 }}><Button label={busy ? 'Sending…' : (isEvent ? 'Add to the schedule' : 'Send to Tuesday Night')} onPress={save} /></View>
+        <View style={{ marginTop: 22 }}><Button label={busy ? 'Sending…' : (isEvent ? 'Add to the schedule' : 'Send to In Between')} onPress={save} /></View>
         <T variant="body" color={c.text2} style={{ marginTop: 12, textAlign: 'center' }}>Everyone in the group will see it.</T>
       </ScrollView>
     </SafeAreaView>

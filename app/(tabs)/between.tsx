@@ -180,7 +180,7 @@ function VerseFinderLive() {
       <Row gap={9} style={{ marginTop: 14, alignItems: 'flex-start', borderRadius: 16, backgroundColor: c.sage, padding: 13 }}>
         <Icon name="info" size={18} color={c.sageInk} strokeWidth={2} />
         <T variant="body" style={{ flex: 1, fontSize: 14.5, lineHeight: 21 }}>
-          These are passages found in Scripture, shown as they’re written. Tuesday Night never writes a verse for you.{'  '}
+          These are passages found in Scripture, shown as they’re written. In Between never writes a verse for you.{'  '}
           <T variant="body" color={c.text2} style={{ fontSize: 14.5 }}>{translation}</T>
         </T>
       </Row>

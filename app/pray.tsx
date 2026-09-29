@@ -65,7 +65,7 @@ export default function Pray() {
         <View style={{ marginTop: 14, opacity: text.trim() && !busy ? 1 : 0.5 }} pointerEvents={text.trim() && !busy ? 'auto' : 'none'}>
           <Button label={busy ? 'Sharing…' : 'Ask the group to pray'} onPress={submit} />
         </View>
-        <T variant="body" color={c.text2} style={{ marginTop: 12, marginBottom: 8, textAlign: 'center' }}>Only Tuesday Night sees this.</T>
+        <T variant="body" color={c.text2} style={{ marginTop: 12, marginBottom: 8, textAlign: 'center' }}>Only In Between sees this.</T>
       </View>
     </SafeAreaView>
   );

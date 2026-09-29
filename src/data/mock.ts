@@ -7,7 +7,7 @@ export const members: Member[] = [
 ];
 
 export const week: Week = {
-  id: 'w-romans8', groupName: 'Tuesday Night', memberCount: 9,
+  id: 'w-romans8', groupName: 'In Between', memberCount: 9,
   passageRef: 'Romans 8:18–30',
   question: 'Where have you seen God working in something you didn’t ask for?',
   hostName: 'Renee', hostWhen: 'Tuesday · 7:00pm', comingCount: 6,

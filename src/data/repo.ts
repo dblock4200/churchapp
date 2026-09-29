@@ -55,7 +55,7 @@ export const repo = {
       }
       return {
         id: data.id as string,
-        groupName: (data as any).groups?.name ?? 'Tuesday Night',
+        groupName: (data as any).groups?.name ?? 'In Between',
         passageRef: data.passage_ref as string,
         question: data.question as string,
         hostName,
@@ -239,7 +239,7 @@ export const repo = {
     (weeks ?? []).forEach((w: any) => {
       const d = new Date((w.starts_on || '') + 'T19:00:00');
       const host = w.host_member_id ? hostName[w.host_member_id] : '';
-      items.push({ key: 'w' + w.id, kind: 'gathering', id: w.id, title: 'Tuesday Night',
+      items.push({ key: 'w' + w.id, kind: 'gathering', id: w.id, title: 'In Between',
         meta: [w.host_when, host ? host + '’s house' : ''].filter(Boolean).join(' · '),
         date: d, box: dateBox(d), going: rsvpCount[w.id] || 0 });
     });
