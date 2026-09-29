@@ -8,6 +8,8 @@ export const usePresence = () => useQuery({ queryKey: ['presence'], queryFn: rep
 export const usePost = (id: string) => useQuery({ queryKey: ['post', id], queryFn: () => repo.getPost(id) });
 export const usePrayers = () => useQuery({ queryKey: ['prayers'], queryFn: repo.getPrayers });
 export const useVerses = () => useQuery({ queryKey: ['verses'], queryFn: repo.getVerses });
+export const usePhotoUrl = (path?: string | null) =>
+  useQuery({ queryKey: ['photoUrl', path], enabled: !!path, queryFn: () => repo.getPhotoUrl(path as string) });
 
 export function useAnswerState() {
   const { data: w } = useWeek();

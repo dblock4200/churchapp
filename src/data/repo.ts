@@ -107,7 +107,7 @@ export const repo = {
     return (data ?? []).map((r: any) => ({
       id: r.id, author: r.members?.display_name ?? 'Someone',
       when: timeLabel(r.created_at), day: dayLabel(r.created_at),
-      text: r.body, hasPhoto: !!r.photo_path,
+      text: r.body, hasPhoto: !!r.photo_path, photoPath: r.photo_path ?? null,
     }));
   },
   async getPost(id: string) {
@@ -120,14 +120,29 @@ export const repo = {
       .order('created_at', { ascending: true });
     return {
       id: p.id, author: (p as any).members?.display_name ?? 'Someone',
-      when: timeLabel(p.created_at), day: dayLabel(p.created_at), text: p.body, hasPhoto: !!p.photo_path,
+      when: timeLabel(p.created_at), day: dayLabel(p.created_at), text: p.body, hasPhoto: !!p.photo_path, photoPath: (p as any).photo_path ?? null,
       replies: (reps ?? []).map((r: any) => ({ id: r.id, author: r.members?.display_name ?? 'Someone', when: timeLabel(r.created_at), text: r.body })),
     };
   },
-  async addPost(groupId: string, memberId: string, body: string): Promise<{ error?: string }> {
+  async addPost(groupId: string, memberId: string, body: string, photoUri?: string): Promise<{ error?: string }> {
     if (!supabase) return { error: 'Not connected' };
-    const { error } = await supabase.from('presence_posts').insert({ group_id: groupId, member_id: memberId, body: body.trim() });
+    let photo_path: string | null = null;
+    if (photoUri) {
+      const ext = (photoUri.split('?')[0].split('.').pop() || 'jpg').toLowerCase();
+      const path = `${groupId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const blob = await (await fetch(photoUri)).blob();
+      const up = await supabase.storage.from('photos').upload(path, blob, { contentType: blob.type || 'image/jpeg' });
+      if (up.error) return { error: up.error.message };
+      photo_path = path;
+    }
+    const { error } = await supabase.from('presence_posts').insert({ group_id: groupId, member_id: memberId, body: body.trim(), photo_path });
     return error ? { error: error.message } : {};
+  },
+  // Presence photos live in a private bucket; hand out a short-lived signed URL.
+  async getPhotoUrl(path: string): Promise<string | null> {
+    if (!supabase || !path) return null;
+    const { data } = await supabase.storage.from('photos').createSignedUrl(path, 3600);
+    return data?.signedUrl ?? null;
   },
   async addReply(postId: string, memberId: string, body: string): Promise<{ error?: string }> {
     if (!supabase) return { error: 'Not connected' };

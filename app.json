@@ -37,7 +37,8 @@
       "expo-font",
       "expo-web-browser",
       "expo-audio",
-      "expo-splash-screen"
+      "expo-splash-screen",
+      "expo-image-picker"
     ],
     "experiments": {
       "typedRoutes": true

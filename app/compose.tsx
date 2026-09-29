@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Pressable, TextInput } from 'react-native';
+import { View, Pressable, TextInput, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
@@ -10,6 +10,7 @@ import { useColors } from '../src/theme/ThemeProvider';
 import { composePrompts } from '../src/data/mock';
 import { useAuth } from '../src/auth/AuthProvider';
 import { repo } from '../src/data/repo';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function Compose() {
   const c = useColors();
@@ -20,11 +21,17 @@ export default function Compose() {
   const [story, setStory] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [photo, setPhoto] = useState<string | null>(null);
+
+  async function pickPhoto() {
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
+    if (!res.canceled && res.assets?.[0]?.uri) setPhoto(res.assets[0].uri);
+  }
 
   async function post() {
     if (!member?.group_id || !member?.id || !story.trim()) return;
     setBusy(true); setErr(null);
-    const res = await repo.addPost(member.group_id, member.id, story);
+    const res = await repo.addPost(member.group_id, member.id, story, photo ?? undefined);
     setBusy(false);
     if (res.error) { setErr(res.error); return; }
     qc.invalidateQueries({ queryKey: ['presence'] });
@@ -61,15 +68,24 @@ export default function Compose() {
 
         {err ? <T variant="body" color={c.clay} style={{ marginBottom: 8 }}>{err}</T> : null}
 
-        <View style={{ borderRadius: 20, backgroundColor: c.surface, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 }}>
-          <View style={{ width: 40, height: 40, borderRadius: 14, backgroundColor: c.surface2, alignItems: 'center', justifyContent: 'center' }}>
-            <Icon name="camera" size={20} color={c.text2} strokeWidth={1.8} />
+        {photo ? (
+          <View style={{ borderRadius: 20, overflow: 'hidden' }}>
+            <Image source={{ uri: photo }} style={{ width: '100%', height: 180 }} resizeMode="cover" />
+            <Pressable onPress={() => setPhoto(null)} style={{ position: 'absolute', top: 10, right: 10, width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="close" size={18} color="#fff" strokeWidth={2.4} />
+            </Pressable>
           </View>
-          <View style={{ flex: 1 }}>
-            <T variant="body" style={{ fontWeight: '600' }}>Add a photo</T>
-            <T variant="body" color={c.text2} style={{ fontSize: 14 }}>Optional · coming soon</T>
-          </View>
-        </View>
+        ) : (
+          <Pressable onPress={pickPhoto} style={{ borderRadius: 20, backgroundColor: c.surface, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 }}>
+            <View style={{ width: 40, height: 40, borderRadius: 14, backgroundColor: c.surface2, alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="camera" size={20} color={c.text2} strokeWidth={1.8} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <T variant="body" style={{ fontWeight: '600' }}>Add a photo</T>
+              <T variant="body" color={c.text2} style={{ fontSize: 14 }}>Optional</T>
+            </View>
+          </Pressable>
+        )}
 
         <View style={{ marginTop: 14, opacity: story.trim() && !busy ? 1 : 0.5 }} pointerEvents={story.trim() && !busy ? 'auto' : 'none'}>
           <Button label={busy ? 'Posting…' : 'Post to Tuesday Night'} onPress={post} />

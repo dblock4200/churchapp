@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { View, Pressable, TextInput, ActivityIndicator } from 'react-native';
+import { View, Pressable, TextInput, ActivityIndicator, Image } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Screen, Card, Row, Stack, PersonLine } from '../../src/ui/primitives';
 import { T } from '../../src/ui/Text';
 import { Icon } from '../../src/ui/Icon';
 import { useColors } from '../../src/theme/ThemeProvider';
-import { usePost } from '../../src/data/hooks';
+import { usePost, usePhotoUrl } from '../../src/data/hooks';
 import { useAuth } from '../../src/auth/AuthProvider';
 import { repo } from '../../src/data/repo';
 
@@ -47,11 +47,7 @@ export default function PostDetail() {
           <Card pad={16} style={{ marginTop: 4 }}>
             <PersonLine name={p.author} meta={`${(p as any).day} · ${p.when}`} />
             <T variant="body" style={{ fontSize: 17, lineHeight: 26, marginTop: 10 }}>{p.text}</T>
-            {p.hasPhoto ? (
-              <View style={{ height: 150, borderRadius: 16, backgroundColor: c.surface2, marginTop: 12, alignItems: 'center', justifyContent: 'center', opacity: 0.85 }}>
-                <Icon name="camera" size={26} color={c.text2} strokeWidth={1.5} />
-              </View>
-            ) : null}
+            {(p as any).photoPath ? <DetailPhoto path={(p as any).photoPath} /> : null}
           </Card>
 
           {p.replies.length > 0 ? (
@@ -83,4 +79,11 @@ export default function PostDetail() {
       )}
     </Screen>
   );
+}
+
+function DetailPhoto({ path }: { path: string }) {
+  const c = useColors();
+  const { data: url } = usePhotoUrl(path);
+  if (!url) return <View style={{ height: 150, borderRadius: 16, backgroundColor: c.surface2, marginTop: 12 }} />;
+  return <Image source={{ uri: url }} style={{ width: '100%', height: 220, borderRadius: 16, marginTop: 12 }} resizeMode="cover" />;
 }

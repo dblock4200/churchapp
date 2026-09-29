@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Pressable, ScrollView } from 'react-native';
+import { View, Pressable, ScrollView, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Screen, Card, Kicker, Row, Stack, Button, PersonLine, Hairline } from '../../src/ui/primitives';
 import { T } from '../../src/ui/Text';
 import { Icon } from '../../src/ui/Icon';
 import { useColors } from '../../src/theme/ThemeProvider';
-import { usePresence, usePrayers } from '../../src/data/hooks';
+import { usePresence, usePrayers, usePhotoUrl } from '../../src/data/hooks';
 import { topics, searchVerses, source } from '../../src/data/verses';
 import { fetchEsv, ESV_LABEL, ESV_NOTICE, ESV_ENABLED } from '../../src/data/esv';
 import { TextInput } from 'react-native';
@@ -75,7 +75,7 @@ function PresenceFeed() {
                   <Card pad={16}>
                     <PersonLine name={p.author} meta={p.when} />
                     <T variant="body" style={{ fontSize: 17, lineHeight: 26, marginTop: 10 }}>{p.text}</T>
-                    {p.hasPhoto ? <PhotoBlock height={128} /> : null}
+                    {p.photoPath ? <PostPhoto path={p.photoPath} height={150} /> : null}
                   </Card>
                 </Pressable>
               </View>
@@ -219,6 +219,13 @@ function VerseFinderLive() {
   );
 }
 
+
+function PostPhoto({ path, height }: { path: string; height: number }) {
+  const c = useColors();
+  const { data: url } = usePhotoUrl(path);
+  if (!url) return <View style={{ height, borderRadius: 16, backgroundColor: c.surface2, marginTop: 12 }} />;
+  return <Image source={{ uri: url }} style={{ width: '100%', height, borderRadius: 16, marginTop: 12 }} resizeMode="cover" />;
+}
 
 function PhotoBlock({ height }: { height: number }) {
   const c = useColors();
