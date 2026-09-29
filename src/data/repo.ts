@@ -102,29 +102,29 @@ export const repo = {
   async getPresence() {
     if (!supabase) return mock.presence as any[];
     const { data } = await supabase.from('presence_posts')
-      .select('id, body, photo_path, created_at, members(display_name)')
+      .select('id, body, photo_path, song, created_at, members(display_name)')
       .is('deleted_at', null).order('created_at', { ascending: false });
     return (data ?? []).map((r: any) => ({
       id: r.id, author: r.members?.display_name ?? 'Someone',
       when: timeLabel(r.created_at), day: dayLabel(r.created_at),
-      text: r.body, hasPhoto: !!r.photo_path, photoPath: r.photo_path ?? null,
+      text: r.body, hasPhoto: !!r.photo_path, photoPath: r.photo_path ?? null, song: r.song ?? null,
     }));
   },
   async getPost(id: string) {
     if (!supabase) return mock.presence.find(p => p.id === id) ?? mock.presence[0];
     const { data: p } = await supabase.from('presence_posts')
-      .select('id, body, photo_path, created_at, members(display_name)').eq('id', id).maybeSingle();
+      .select('id, body, photo_path, song, created_at, members(display_name)').eq('id', id).maybeSingle();
     if (!p) return null;
     const { data: reps } = await supabase.from('post_replies')
       .select('id, body, created_at, members(display_name)').eq('post_id', id).is('deleted_at', null)
       .order('created_at', { ascending: true });
     return {
       id: p.id, author: (p as any).members?.display_name ?? 'Someone',
-      when: timeLabel(p.created_at), day: dayLabel(p.created_at), text: p.body, hasPhoto: !!p.photo_path, photoPath: (p as any).photo_path ?? null,
+      when: timeLabel(p.created_at), day: dayLabel(p.created_at), text: p.body, hasPhoto: !!p.photo_path, photoPath: (p as any).photo_path ?? null, song: (p as any).song ?? null,
       replies: (reps ?? []).map((r: any) => ({ id: r.id, author: r.members?.display_name ?? 'Someone', when: timeLabel(r.created_at), text: r.body })),
     };
   },
-  async addPost(groupId: string, memberId: string, body: string, photoUri?: string): Promise<{ error?: string }> {
+  async addPost(groupId: string, memberId: string, body: string, photoUri?: string, songUrl?: string): Promise<{ error?: string }> {
     if (!supabase) return { error: 'Not connected' };
     let photo_path: string | null = null;
     if (photoUri) {
@@ -135,7 +135,14 @@ export const repo = {
       if (up.error) return { error: up.error.message };
       photo_path = path;
     }
-    const { error } = await supabase.from('presence_posts').insert({ group_id: groupId, member_id: memberId, body: body.trim(), photo_path });
+    let song: any = null;
+    if (songUrl) {
+      try {
+        const { data } = await supabase.functions.invoke('resolve-song', { body: { url: songUrl } });
+        song = data?.song ?? null;
+      } catch { /* a bad link just posts without a song card */ }
+    }
+    const { error } = await supabase.from('presence_posts').insert({ group_id: groupId, member_id: memberId, body: body.trim(), photo_path, song });
     return error ? { error: error.message } : {};
   },
   // Presence photos live in a private bucket; hand out a short-lived signed URL.

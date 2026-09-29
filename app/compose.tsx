@@ -22,6 +22,10 @@ export default function Compose() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
+  const [songUrl, setSongUrl] = useState('');
+  const [songOpen, setSongOpen] = useState(false);
+  const songOk = /(?:open\.spotify\.com|spotify\.link|music\.apple\.com|(?:www\.|music\.)?youtube\.com|youtu\.be)/i.test(songUrl.trim());
+  const songPlatformLabel = /spotify/i.test(songUrl) ? 'Spotify' : /apple/i.test(songUrl) ? 'Apple Music' : /youtu/i.test(songUrl) ? 'YouTube' : 'Song';
 
   async function pickPhoto() {
     const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
@@ -31,7 +35,7 @@ export default function Compose() {
   async function post() {
     if (!member?.group_id || !member?.id || !story.trim()) return;
     setBusy(true); setErr(null);
-    const res = await repo.addPost(member.group_id, member.id, story, photo ?? undefined);
+    const res = await repo.addPost(member.group_id, member.id, story, photo ?? undefined, songOk ? songUrl.trim() : undefined);
     setBusy(false);
     if (res.error) { setErr(res.error); return; }
     qc.invalidateQueries({ queryKey: ['presence'] });
@@ -86,6 +90,43 @@ export default function Compose() {
             </View>
           </Pressable>
         )}
+
+        <View style={{ marginTop: 12 }}>
+          {songOpen || songUrl ? (
+            <View style={{ borderRadius: 20, backgroundColor: c.surface, padding: 14 }}>
+              <Row gap={12} style={{ alignItems: 'center' }}>
+                <View style={{ width: 40, height: 40, borderRadius: 14, backgroundColor: c.surface2, alignItems: 'center', justifyContent: 'center' }}>
+                  <Icon name="speaker" size={20} color={c.text2} strokeWidth={1.8} />
+                </View>
+                <TextInput
+                  value={songUrl} onChangeText={setSongUrl} autoCapitalize="none" autoCorrect={false}
+                  placeholder="Paste a Spotify, Apple Music, or YouTube link" placeholderTextColor={c.text2}
+                  style={{ flex: 1, color: c.text, fontSize: 15 }}
+                />
+                {songUrl ? (
+                  <Pressable onPress={() => { setSongUrl(''); setSongOpen(false); }} hitSlop={8}>
+                    <Icon name="close" size={18} color={c.text2} strokeWidth={2.2} />
+                  </Pressable>
+                ) : null}
+              </Row>
+              {songUrl && !songOk ? (
+                <T variant="body" color={c.clay} style={{ fontSize: 13, marginTop: 8 }}>That doesn’t look like a Spotify, Apple Music, or YouTube link.</T>
+              ) : songUrl && songOk ? (
+                <T variant="body" color={c.text2} style={{ fontSize: 13, marginTop: 8 }}>{songPlatformLabel} link added — it’ll play right in the post.</T>
+              ) : null}
+            </View>
+          ) : (
+            <Pressable onPress={() => setSongOpen(true)} style={{ borderRadius: 20, backgroundColor: c.surface, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 }}>
+              <View style={{ width: 40, height: 40, borderRadius: 14, backgroundColor: c.surface2, alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name="speaker" size={20} color={c.text2} strokeWidth={1.8} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <T variant="body" style={{ fontWeight: '600' }}>Add a song</T>
+                <T variant="body" color={c.text2} style={{ fontSize: 14 }}>Optional · Spotify, Apple Music, or YouTube</T>
+              </View>
+            </Pressable>
+          )}
+        </View>
 
         <View style={{ marginTop: 14, opacity: story.trim() && !busy ? 1 : 0.5 }} pointerEvents={story.trim() && !busy ? 'auto' : 'none'}>
           <Button label={busy ? 'Posting…' : 'Post to Tuesday Night'} onPress={post} />

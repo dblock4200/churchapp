@@ -3,6 +3,7 @@ import { View, Pressable, ScrollView, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Screen, Card, Kicker, Row, Stack, Button, PersonLine, Hairline } from '../../src/ui/primitives';
+import { SongCard } from '../../src/ui/SongCard';
 import { T } from '../../src/ui/Text';
 import { Icon } from '../../src/ui/Icon';
 import { useColors } from '../../src/theme/ThemeProvider';
@@ -76,6 +77,7 @@ function PresenceFeed() {
                     <PersonLine name={p.author} meta={p.when} />
                     <T variant="body" style={{ fontSize: 17, lineHeight: 26, marginTop: 10 }}>{p.text}</T>
                     {p.photoPath ? <PostPhoto path={p.photoPath} height={150} /> : null}
+                    {p.song ? <SongCard song={p.song} /> : null}
                   </Card>
                 </Pressable>
               </View>

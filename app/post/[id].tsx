@@ -7,6 +7,7 @@ import { T } from '../../src/ui/Text';
 import { Icon } from '../../src/ui/Icon';
 import { useColors } from '../../src/theme/ThemeProvider';
 import { usePost, usePhotoUrl } from '../../src/data/hooks';
+import { SongCard } from '../../src/ui/SongCard';
 import { useAuth } from '../../src/auth/AuthProvider';
 import { repo } from '../../src/data/repo';
 
@@ -48,6 +49,7 @@ export default function PostDetail() {
             <PersonLine name={p.author} meta={`${(p as any).day} · ${p.when}`} />
             <T variant="body" style={{ fontSize: 17, lineHeight: 26, marginTop: 10 }}>{p.text}</T>
             {(p as any).photoPath ? <DetailPhoto path={(p as any).photoPath} /> : null}
+            {(p as any).song ? <SongCard song={(p as any).song} /> : null}
           </Card>
 
           {p.replies.length > 0 ? (
