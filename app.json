@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "In Between",
+    "name": "Philia",
     "slug": "anchor",
     "version": "0.1.0",
     "orientation": "portrait",
@@ -44,7 +44,7 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "In Between uses the microphone to record the week's talk so the group can get notes afterward."
+          "microphonePermission": "Philia uses the microphone to record the week's talk so the group can get notes afterward."
         }
       ],
       [
@@ -58,7 +58,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "In Between uses your photos so you can add one to something you share with the group."
+          "photosPermission": "Philia uses your photos so you can add one to something you share with the group."
         }
       ],
       "expo-asset"

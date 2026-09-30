@@ -129,7 +129,7 @@ export default function Compose() {
         </View>
 
         <View style={{ marginTop: 14, opacity: story.trim() && !busy ? 1 : 0.5 }} pointerEvents={story.trim() && !busy ? 'auto' : 'none'}>
-          <Button label={busy ? 'Posting…' : 'Post to In Between'} onPress={post} />
+          <Button label={busy ? 'Posting…' : 'Post to Philia'} onPress={post} />
         </View>
         <T variant="body" color={c.text2} style={{ marginTop: 12, marginBottom: 8, textAlign: 'center' }}>Nine people. No one else.</T>
       </View>

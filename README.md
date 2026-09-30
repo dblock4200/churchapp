@@ -1,4 +1,4 @@
-# In Between
+# Philia
 
 A private app for one ~9-person Bible study group. Two halves: **The Week**
 (the passage, the question, who's hosting, the memory verse) and **The Between**

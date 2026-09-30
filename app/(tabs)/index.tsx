@@ -35,7 +35,7 @@ export default function ThisWeek() {
   if (!w) {
     return (
       <Screen>
-        <Row style={{ minHeight: 46, marginTop: 8 }}><T variant="t1">{member?.group_name ?? 'In Between'}</T></Row>
+        <Row style={{ minHeight: 46, marginTop: 8 }}><T variant="t1">{member?.group_name ?? 'Philia'}</T></Row>
         <Card tint="peach" pad={20} style={{ marginTop: 12 }}>
           <T variant="t2">{isLeader ? 'Your first Tuesday' : 'Nothing set yet'}</T>
           <T variant="body" color={c.text2} style={{ marginTop: 8, fontSize: 17, lineHeight: 24 }}>

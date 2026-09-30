@@ -27,7 +27,7 @@ export default function You() {
           <Avatar name={name} size={64} />
           <View style={{ flex: 1 }}>
             <T variant="t2">{name}</T>
-            <T variant="body" color={c.text2} style={{ marginTop: 2 }}>{member?.is_leader ? 'Leads' : 'Part of'} {member?.group_name ?? 'In Between'}</T>
+            <T variant="body" color={c.text2} style={{ marginTop: 2 }}>{member?.is_leader ? 'Leads' : 'Part of'} {member?.group_name ?? 'Philia'}</T>
           </View>
         </Row>
       </Card>
@@ -40,7 +40,7 @@ export default function You() {
         ]} />
       </View>
       <View style={{ marginTop: 14 }}>
-        <SettingsGroup rows={[{ icon: 'info', tint: c.sage, ink: c.sageInk, label: 'About In Between' }]} />
+        <SettingsGroup rows={[{ icon: 'info', tint: c.sage, ink: c.sageInk, label: 'About Philia' }]} />
       </View>
 
       <View style={{ marginTop: 20, alignItems: 'center' }}>
