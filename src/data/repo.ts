@@ -5,6 +5,11 @@ import { supabase } from '../lib/supabase';
 
 const ok = <T,>(v: T) => Promise.resolve(v);
 
+// Fire-and-forget push notification for a group event (reply/prayer/week/partner).
+function fireNotify(payload: { type: string; id: string; actorMemberId?: string }) {
+  supabase?.functions.invoke('notify', { body: payload }).catch(() => {});
+}
+
 function whenLabel(iso: string): string {
   const d = new Date(iso); const now = new Date();
   const sameDay = d.toDateString() === now.toDateString();
@@ -159,10 +164,19 @@ export const repo = {
       return data?.text ? data : null;
     } catch { return null; }
   },
+  async savePushToken(memberId: string, token: string, platform: string): Promise<void> {
+    if (!supabase) return;
+    await supabase.from('push_tokens').upsert(
+      { member_id: memberId, token, platform, updated_at: new Date().toISOString() },
+      { onConflict: 'member_id,token' },
+    );
+  },
   async addReply(postId: string, memberId: string, body: string): Promise<{ error?: string }> {
     if (!supabase) return { error: 'Not connected' };
-    const { error } = await supabase.from('post_replies').insert({ post_id: postId, member_id: memberId, body: body.trim() });
-    return error ? { error: error.message } : {};
+    const { data, error } = await supabase.from('post_replies').insert({ post_id: postId, member_id: memberId, body: body.trim() }).select('id').single();
+    if (error) return { error: error.message };
+    fireNotify({ type: 'reply', id: data.id });
+    return {};
   },
   async getPrayers() {
     if (!supabase) return mock.prayers as any[];
@@ -176,10 +190,12 @@ export const repo = {
   },
   async addPrayer(groupId: string, memberId: string, body: string, onBehalfOf?: string): Promise<{ error?: string }> {
     if (!supabase) return { error: 'Not connected' };
-    const { error } = await supabase.from('prayer_requests').insert({
+    const { data, error } = await supabase.from('prayer_requests').insert({
       group_id: groupId, member_id: memberId, body: body.trim(), on_behalf_of: onBehalfOf?.trim() || null,
-    });
-    return error ? { error: error.message } : {};
+    }).select('id').single();
+    if (error) return { error: error.message };
+    fireNotify({ type: 'prayer', id: data.id });
+    return {};
   },
   async markPrayerAnswered(id: string): Promise<{ error?: string }> {
     if (!supabase) return { error: 'Not connected' };
@@ -221,8 +237,10 @@ export const repo = {
       return error ? { error: error.message } : {};
     }
     row.group_id = f.groupId; row.starts_on = new Date().toISOString().slice(0, 10);
-    const { error } = await supabase.from('weeks').insert(row);
-    return error ? { error: error.message } : {};
+    const { data, error } = await supabase.from('weeks').insert(row).select('id').single();
+    if (error) return { error: error.message };
+    fireNotify({ type: 'week', id: data.id });
+    return {};
   },
 
   async getSchedule() {
@@ -378,8 +396,10 @@ export const repo = {
   },
   async addPartnerMessage(partnershipId: string, memberId: string, body: string): Promise<{ error?: string }> {
     if (!supabase) return { error: 'Not connected' };
-    const { error } = await supabase.from('partner_messages').insert({ partnership_id: partnershipId, member_id: memberId, body: body.trim() });
-    return error ? { error: error.message } : {};
+    const { data, error } = await supabase.from('partner_messages').insert({ partnership_id: partnershipId, member_id: memberId, body: body.trim() }).select('id').single();
+    if (error) return { error: error.message };
+    fireNotify({ type: 'partner', id: data.id });
+    return {};
   },
   async getActiveChallenge(partnershipId: string) {
     if (!supabase) return null;

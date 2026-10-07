@@ -10,6 +10,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider, useTheme } from '../src/theme/ThemeProvider';
 import { AuthProvider, useAuth } from '../src/auth/AuthProvider';
+import { registerForPush, useNotificationRouting } from '../src/push';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 60_000, retry: 1 } } });
 
@@ -33,8 +34,10 @@ function useGuard() {
 
 function RootStack() {
   const { scheme, c } = useTheme();
-  const { ready } = useAuth();
+  const { ready, member } = useAuth();
   useGuard();
+  useNotificationRouting();
+  useEffect(() => { if (member?.id) registerForPush(member.id); }, [member?.id]);
   if (!ready) {
     return <View style={{ flex: 1, backgroundColor: c.ground, alignItems: 'center', justifyContent: 'center' }}>
       <ActivityIndicator color={c.accent} />
