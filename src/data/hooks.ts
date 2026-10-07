@@ -10,6 +10,8 @@ export const usePrayers = () => useQuery({ queryKey: ['prayers'], queryFn: repo.
 export const useVerses = () => useQuery({ queryKey: ['verses'], queryFn: repo.getVerses });
 export const usePhotoUrl = (path?: string | null) =>
   useQuery({ queryKey: ['photoUrl', path], enabled: !!path, queryFn: () => repo.getPhotoUrl(path as string) });
+export const usePassage = (ref?: string | null) =>
+  useQuery({ queryKey: ['passage', ref], enabled: !!ref, queryFn: () => repo.getPassage(ref as string) });
 
 export function useAnswerState() {
   const { data: w } = useWeek();

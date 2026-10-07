@@ -151,6 +151,14 @@ export const repo = {
     const { data } = await supabase.storage.from('photos').createSignedUrl(path, 3600);
     return data?.signedUrl ?? null;
   },
+  // Resolve a Bible reference (from a talk's notes) to real scripture text.
+  async getPassage(ref: string): Promise<{ ref: string; text: string; translation: string } | null> {
+    if (!supabase || !ref) return null;
+    try {
+      const { data } = await supabase.functions.invoke('passage', { body: { ref } });
+      return data?.text ? data : null;
+    } catch { return null; }
+  },
   async addReply(postId: string, memberId: string, body: string): Promise<{ error?: string }> {
     if (!supabase) return { error: 'Not connected' };
     const { error } = await supabase.from('post_replies').insert({ post_id: postId, member_id: memberId, body: body.trim() });

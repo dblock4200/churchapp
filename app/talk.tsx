@@ -68,11 +68,14 @@ export default function Talk() {
           {t.passages.length > 0 ? (
             <>
               <Kicker style={{ marginTop: 18 }}>Passages mentioned</Kicker>
+              <T variant="body" color={c.text2} style={{ fontSize: 13, marginTop: 4 }}>Tap to read</T>
               <Row gap={8} style={{ marginTop: 8, flexWrap: 'wrap' }}>
                 {t.passages.map((pRef, i) => (
-                  <View key={i} style={{ backgroundColor: c.surface2, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6 }}>
-                    <T variant="body" color={c.text2} style={{ fontSize: 14, fontWeight: '600' }}>{pRef}</T>
-                  </View>
+                  <Pressable key={i} onPress={() => router.push(`/verse?ref=${encodeURIComponent(pRef)}`)}
+                    style={{ backgroundColor: c.sage, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <T variant="body" color={c.sageInk} style={{ fontSize: 14, fontWeight: '700' }}>{pRef}</T>
+                    <Icon name="book" size={13} color={c.sageInk} strokeWidth={2} />
+                  </Pressable>
                 ))}
               </Row>
             </>
