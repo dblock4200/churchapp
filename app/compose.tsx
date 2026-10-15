@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Pressable, TextInput, Image } from 'react-native';
+import { View, Pressable, TextInput, Image, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
@@ -50,7 +50,14 @@ export default function Compose() {
         <View style={{ width: 52 }} />
       </Row>
 
-      <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 12 }}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={8}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 28 }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        showsVerticalScrollIndicator={false}
+      >
         <T variant="t1" style={{ fontSize: 25 }}>{prompt.text}</T>
         <Row gap={8} style={{ marginTop: 16, flexWrap: 'wrap' }}>
           {composePrompts.map(p => {
@@ -67,7 +74,7 @@ export default function Compose() {
         <TextInput
           value={story} onChangeText={setStory} multiline autoFocus
           placeholder="Write it here…" placeholderTextColor={c.text2}
-          style={{ flex: 1, marginTop: 18, color: c.text, fontSize: 18, lineHeight: 27, textAlignVertical: 'top' }}
+          style={{ minHeight: 150, marginTop: 18, color: c.text, fontSize: 18, lineHeight: 27, textAlignVertical: 'top' }}
         />
 
         {err ? <T variant="body" color={c.clay} style={{ marginBottom: 8 }}>{err}</T> : null}
@@ -132,7 +139,8 @@ export default function Compose() {
           <Button label={busy ? 'Posting…' : 'Post to Philia'} onPress={post} />
         </View>
         <T variant="body" color={c.text2} style={{ marginTop: 12, marginBottom: 8, textAlign: 'center' }}>Nine people. No one else.</T>
-      </View>
+      </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
