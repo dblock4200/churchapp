@@ -59,7 +59,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Philia uses your photos so you can add one to something you share with the group."
+          "photosPermission": "Philia uses your photos so you can add one to something you share with the group.",
+          "cameraPermission": "Philia uses the camera so you can take a profile photo."
         }
       ],
       "expo-asset"

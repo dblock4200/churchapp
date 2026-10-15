@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Pressable, ViewStyle, ScrollView, Platform } from 'react-native';
+import { View, Pressable, ViewStyle, ScrollView, Platform, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme, useColors } from '../theme/ThemeProvider';
 import { radius, shadow, space } from '../theme/tokens';
@@ -65,7 +65,7 @@ export function IconBadge({ children, tint, size = 44, radiusv = 15 }:
   );
 }
 
-export function Avatar({ name, size = 40 }: { name: string; size?: number }) {
+export function Avatar({ name, size = 40, uri }: { name: string; size?: number; uri?: string | null }) {
   const c = useColors();
   const map: Record<string, [string, string]> = {
     Renee: [c.peach, c.peachInk], Marcus: [c.sage, c.sageInk], Tom: [c.lilac, c.lilacInk],
@@ -73,10 +73,13 @@ export function Avatar({ name, size = 40 }: { name: string; size?: number }) {
     You: [c.pill, c.accent],
   };
   const [bg, ink] = map[name] ?? [c.surface2, c.text2];
+  if (uri) {
+    return <Image source={{ uri }} style={{ width: size, height: size, borderRadius: size / 2 }} resizeMode="cover" />;
+  }
   return (
     <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: bg,
-      alignItems: 'center', justifyContent: 'center' }}>
-      <T style={{ fontWeight: '700', fontSize: size * 0.4 }} color={ink}>{name[0]}</T>
+      alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+      <T style={{ fontWeight: '700', fontSize: size * 0.4, lineHeight: size * 0.52, textAlign: 'center' }} color={ink}>{(name[0] || '?').toUpperCase()}</T>
     </View>
   );
 }

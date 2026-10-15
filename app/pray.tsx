@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Pressable, TextInput } from 'react-native';
+import { View, Pressable, TextInput, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
@@ -39,12 +39,13 @@ export default function Pray() {
         <View style={{ width: 52 }} />
       </Row>
 
-      <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 12 }}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={8}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 28 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" showsVerticalScrollIndicator={false}>
         <T variant="t1" style={{ fontSize: 25 }}>What can the group pray for?</T>
         <TextInput
           value={text} onChangeText={setText} multiline autoFocus
           placeholder="Say as much or as little as you want…" placeholderTextColor={c.text2}
-          style={{ flex: 1, marginTop: 16, color: c.text, fontSize: 18, lineHeight: 27, textAlignVertical: 'top' }}
+          style={{ minHeight: 140, marginTop: 16, color: c.text, fontSize: 18, lineHeight: 27, textAlignVertical: 'top' }}
         />
 
         <Pressable onPress={() => setForOther(v => !v)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 6 }}>
@@ -66,7 +67,8 @@ export default function Pray() {
           <Button label={busy ? 'Sharing…' : 'Ask the group to pray'} onPress={submit} />
         </View>
         <T variant="body" color={c.text2} style={{ marginTop: 12, marginBottom: 8, textAlign: 'center' }}>Only Philia sees this.</T>
-      </View>
+      </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

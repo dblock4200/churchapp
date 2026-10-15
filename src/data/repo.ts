@@ -171,6 +171,16 @@ export const repo = {
       { onConflict: 'member_id,token' },
     );
   },
+  async setMyAvatar(memberId: string, groupId: string, uri: string): Promise<{ error?: string }> {
+    if (!supabase) return { error: 'Not connected' };
+    const ext = (uri.split('?')[0].split('.').pop() || 'jpg').toLowerCase();
+    const path = `${groupId}/avatar_${memberId}_${Date.now()}.${ext}`;
+    const blob = await (await fetch(uri)).blob();
+    const up = await supabase.storage.from('photos').upload(path, blob, { contentType: blob.type || 'image/jpeg' });
+    if (up.error) return { error: up.error.message };
+    const { error } = await supabase.from('members').update({ avatar_path: path }).eq('id', memberId);
+    return error ? { error: error.message } : {};
+  },
   async addReply(postId: string, memberId: string, body: string): Promise<{ error?: string }> {
     if (!supabase) return { error: 'Not connected' };
     const { data, error } = await supabase.from('post_replies').insert({ post_id: postId, member_id: memberId, body: body.trim() }).select('id').single();

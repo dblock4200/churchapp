@@ -1,19 +1,42 @@
-import React from 'react';
-import { View, Pressable } from 'react-native';
+import React, { useState } from 'react';
+import { View, Pressable, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen, Card, Row, Avatar, Hairline } from '../../src/ui/primitives';
 import { T } from '../../src/ui/Text';
 import { Icon, IconName } from '../../src/ui/Icon';
 import { useColors } from '../../src/theme/ThemeProvider';
 import { useAuth } from '../../src/auth/AuthProvider';
-import { usePartnership } from '../../src/data/hooks';
+import { usePartnership, usePhotoUrl } from '../../src/data/hooks';
+import { repo } from '../../src/data/repo';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function You() {
   const c = useColors();
   const router = useRouter();
-  const { member, signOut } = useAuth();
+  const { member, signOut, refreshMember } = useAuth();
   const { data: partnership } = usePartnership();
   const name = member?.display_name ?? 'You';
+  const { data: avatarUrl } = usePhotoUrl(member?.avatar_path);
+  const [busy, setBusy] = useState(false);
+
+  async function changeAvatar(fromCamera: boolean) {
+    if (!member) return;
+    const res = fromCamera
+      ? await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [1, 1], quality: 0.7 })
+      : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.7 });
+    if (res.canceled || !res.assets?.[0]?.uri) return;
+    setBusy(true);
+    await repo.setMyAvatar(member.id, member.group_id, res.assets[0].uri);
+    await refreshMember();
+    setBusy(false);
+  }
+  function onAvatarPress() {
+    Alert.alert('Profile photo', undefined, [
+      { text: 'Take a photo', onPress: () => changeAvatar(true) },
+      { text: 'Choose from camera roll', onPress: () => changeAvatar(false) },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }
 
   const partnerValue = partnership?.status === 'active' ? `with ${partnership.partnerName}`
     : partnership?.status === 'pending' ? 'Pending' : 'Optional · not set up';
@@ -24,7 +47,12 @@ export default function You() {
 
       <Card pad={16} style={{ marginTop: 8 }}>
         <Row gap={16}>
-          <Avatar name={name} size={64} />
+          <Pressable onPress={onAvatarPress}>
+            <Avatar name={name} size={64} uri={avatarUrl} />
+            <View style={{ position: 'absolute', right: -2, bottom: -2, width: 24, height: 24, borderRadius: 12, backgroundColor: c.accent, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: c.ground }}>
+              {busy ? <ActivityIndicator size="small" color={c.onAccent} /> : <Icon name="camera" size={12} color={c.onAccent} strokeWidth={2.2} />}
+            </View>
+          </Pressable>
           <View style={{ flex: 1 }}>
             <T variant="t2">{name}</T>
             <T variant="body" color={c.text2} style={{ marginTop: 2 }}>{member?.is_leader ? 'Leads' : 'Part of'} {member?.group_name ?? 'Philia'}</T>
@@ -36,7 +64,7 @@ export default function You() {
         <SettingsGroup rows={[
           ...(member?.is_leader ? [{ icon: 'calendar' as IconName, tint: c.pill, ink: c.accent, label: 'Set this week', onPress: () => router.push('/set-week') }] : []),
           { icon: 'users', tint: c.lilac, ink: c.lilacInk, label: 'Accountability partner', value: partnerValue, onPress: () => router.push('/partner') },
-          { icon: 'bell', tint: c.butter, ink: c.butterInk, label: 'Reminders', value: 'Tue 5pm' },
+          { icon: 'bell' as IconName, tint: c.butter, ink: c.butterInk, label: 'Reminders', onPress: () => router.push('/reminders') },
         ]} />
       </View>
       <View style={{ marginTop: 14 }}>

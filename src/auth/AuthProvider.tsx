@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
-export type Member = { id: string; group_id: string; display_name: string; is_leader: boolean; group_name?: string };
+export type Member = { id: string; group_id: string; display_name: string; is_leader: boolean; group_name?: string; avatar_path?: string | null };
 type Result = { error?: string; needsConfirm?: boolean };
 type AuthValue = {
   ready: boolean;
@@ -27,13 +27,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!supabase || !s) { setMember(null); return; }
     const { data } = await supabase
       .from('members')
-      .select('id, group_id, display_name, is_leader, groups(name)')
+      .select('id, group_id, display_name, is_leader, avatar_path, groups(name)')
       .eq('user_id', s.user.id)
       .limit(1)
       .maybeSingle();
     setMember(data ? {
       id: data.id, group_id: data.group_id, display_name: data.display_name,
-      is_leader: data.is_leader, group_name: (data as any).groups?.name,
+      is_leader: data.is_leader, group_name: (data as any).groups?.name, avatar_path: (data as any).avatar_path ?? null,
     } : null);
   }, []);
 

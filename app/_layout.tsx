@@ -62,6 +62,7 @@ function RootStack() {
         <Stack.Screen name="record-talk" options={{ presentation: 'modal' }} />
         <Stack.Screen name="talk" />
         <Stack.Screen name="verse" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="reminders" options={{ presentation: 'modal' }} />
       </Stack>
     </>
   );

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Pressable, TextInput, ScrollView } from 'react-native';
+import { View, Pressable, TextInput, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -67,7 +67,8 @@ export default function NewEvent() {
         <T variant="t3">{isEvent ? 'Add a group event' : 'Suggest a meet-up'}</T>
         <View style={{ width: 52 }} />
       </Row>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={8}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
         {label('What')}{field(title, setTitle, isEvent ? 'e.g. Serve night at the food bank' : 'e.g. Bible study at the park')}
         {label('Where')}{field(place, setPlace, 'e.g. Kiwanis Park — ramada 3')}
         <Row gap={12}>
@@ -79,6 +80,7 @@ export default function NewEvent() {
         <View style={{ marginTop: 22 }}><Button label={busy ? 'Sending…' : (isEvent ? 'Add to the schedule' : 'Send to Philia')} onPress={save} /></View>
         <T variant="body" color={c.text2} style={{ marginTop: 12, textAlign: 'center' }}>Everyone in the group will see it.</T>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
