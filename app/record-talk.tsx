@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAudioRecorder, RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync } from 'expo-audio';
 import { Row } from '../src/ui/primitives';
+import { PulseRing } from '../src/ui/motion';
 import { T } from '../src/ui/Text';
 import { useColors } from '../src/theme/ThemeProvider';
 import { useAuth } from '../src/auth/AuthProvider';
@@ -71,6 +72,7 @@ export default function RecordTalk() {
           {phase === 'saving' ? <ActivityIndicator color={c.accent} /> :
             <Pressable onPress={phase === 'recording' ? stop : start}
               style={{ width: 84, height: 84, borderRadius: 42, backgroundColor: phase === 'recording' ? c.surface2 : c.accent, alignItems: 'center', justifyContent: 'center' }}>
+              {phase === 'recording' ? <PulseRing size={84} color={c.clay} /> : null}
               {phase === 'recording'
                 ? <View style={{ width: 28, height: 28, borderRadius: 7, backgroundColor: c.clay }} />
                 : <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: c.onAccent }} />}

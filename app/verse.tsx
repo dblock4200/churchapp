@@ -6,6 +6,7 @@ import { Row, Kicker } from '../src/ui/primitives';
 import { T } from '../src/ui/Text';
 import { useColors } from '../src/theme/ThemeProvider';
 import { usePassage } from '../src/data/hooks';
+import { Appear } from '../src/ui/motion';
 
 // Opened from a talk's "Passages mentioned" — shows the real verse text
 // (ESV when live, World English Bible now). Scripture is never generated.
@@ -29,13 +30,13 @@ export default function Verse() {
             Couldn’t find “{ref}”. It may be written in a way the lookup didn’t recognize.
           </T>
         ) : (
-          <>
+          <Appear rise={10}>
             <Kicker color={c.accent}>{data.ref}</Kicker>
             <T variant="scripture" style={{ fontSize: 19, lineHeight: 31, marginTop: 14 }}>{data.text}</T>
             <T variant="body" color={c.text2} style={{ marginTop: 20, fontSize: 13, lineHeight: 19 }}>
               {data.translation} · shown as written, never generated
             </T>
-          </>
+          </Appear>
         )}
       </ScrollView>
     </SafeAreaView>

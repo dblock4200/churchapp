@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Pressable, TextInput, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -19,33 +20,21 @@ export default function NewEvent() {
 
   const [title, setTitle] = useState('');
   const [place, setPlace] = useState('');
-  const [date, setDate] = useState('');
-  const [time, setTime] = useState('');
+  const [when, setWhen] = useState(() => { const d = new Date(); d.setSeconds(0, 0); d.setMinutes(0); d.setHours(d.getHours() + 1); return d; });
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  // events are leader-only
   useEffect(() => { if (isEvent && member && !member.is_leader) router.replace('/'); }, [isEvent, member]);
 
-  function parseStartsAt(): string | null {
-    const m = date.trim().match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-    const t = time.trim().match(/^(\d{1,2}):(\d{2})\s*(am|pm)?$/i);
-    if (!m || !t) return null;
-    let h = parseInt(t[1], 10); const min = parseInt(t[2], 10);
-    const ap = (t[3] || '').toLowerCase();
-    if (ap === 'pm' && h < 12) h += 12; if (ap === 'am' && h === 12) h = 0;
-    const d = new Date(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3]), h, min);
-    return isNaN(d.getTime()) ? null : d.toISOString();
-  }
+  function setDate(d: Date) { const n = new Date(when); n.setFullYear(d.getFullYear(), d.getMonth(), d.getDate()); setWhen(n); }
+  function setTime(d: Date) { const n = new Date(when); n.setHours(d.getHours(), d.getMinutes(), 0, 0); setWhen(n); }
 
   async function save() {
     if (!title.trim()) { setErr('Give it a name.'); return; }
-    const startsAt = parseStartsAt();
-    if (!startsAt) { setErr('Add a date (YYYY-MM-DD) and time (e.g. 10:00am).'); return; }
     if (!member?.group_id || !member?.id) return;
     setBusy(true); setErr(null);
-    const res = await repo.addEvent({ kind: isEvent ? 'event' : 'meetup', groupId: member.group_id, memberId: member.id, title, place, startsAt, note });
+    const res = await repo.addEvent({ kind: isEvent ? 'event' : 'meetup', groupId: member.group_id, memberId: member.id, title, place, startsAt: when.toISOString(), note });
     setBusy(false);
     if (res.error) { setErr(res.error); return; }
     qc.invalidateQueries({ queryKey: ['schedule'] });
@@ -53,12 +42,13 @@ export default function NewEvent() {
   }
 
   const label = (t: string) => <T variant="kicker" color={c.text2} style={{ marginBottom: 8, marginTop: 18 }}>{t}</T>;
-  const field = (v: string, set: (s: string) => void, ph: string, multi = false, opts: any = {}) => (
+  const field = (v: string, set: (s: string) => void, ph: string, multi = false) => (
     <View style={{ borderRadius: 16, backgroundColor: c.surface2, paddingHorizontal: 16, paddingVertical: multi ? 14 : 0, minHeight: multi ? 84 : 54, justifyContent: 'center' }}>
       <TextInput value={v} onChangeText={set} placeholder={ph} placeholderTextColor={c.text2} multiline={multi}
-        style={{ color: c.text, fontSize: 16, textAlignVertical: multi ? 'top' : 'center' }} {...opts} />
+        style={{ color: c.text, fontSize: 16, textAlignVertical: multi ? 'top' : 'center' }} />
     </View>
   );
+  const prettyWhen = when.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) + ' · ' + when.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 
   return (
     <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: c.ground }}>
@@ -71,10 +61,24 @@ export default function NewEvent() {
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
         {label('What')}{field(title, setTitle, isEvent ? 'e.g. Serve night at the food bank' : 'e.g. Bible study at the park')}
         {label('Where')}{field(place, setPlace, 'e.g. Kiwanis Park — ramada 3')}
-        <Row gap={12}>
-          <View style={{ flex: 1 }}>{label('Date')}{field(date, setDate, '2026-10-04', false, { autoCapitalize: 'none' })}</View>
-          <View style={{ flex: 1 }}>{label('Time')}{field(time, setTime, '10:00am', false, { autoCapitalize: 'none' })}</View>
-        </Row>
+
+        {label('When')}
+        <View style={{ borderRadius: 16, backgroundColor: c.surface2, paddingHorizontal: 14, paddingVertical: 14 }}>
+          <T variant="body" color={c.accent} style={{ fontWeight: '700' }}>{prettyWhen}</T>
+          {Platform.OS === 'web' ? (
+            <T variant="body" color={c.text2} style={{ fontSize: 13, marginTop: 8 }}>Pick the day and time on the app.</T>
+          ) : (
+            <View style={{ marginTop: 6 }}>
+              <View style={{ alignItems: 'center' }}>
+                <DateTimePicker value={when} mode="date" display="inline" onChange={(_e, d) => d && setDate(d)} themeVariant="dark" accentColor={c.accent} />
+              </View>
+              <View style={{ alignItems: 'center' }}>
+                <DateTimePicker value={when} mode="time" display="spinner" onChange={(_e, d) => d && setTime(d)} themeVariant="dark" />
+              </View>
+            </View>
+          )}
+        </View>
+
         {label('A note (optional)')}{field(note, setNote, isEvent ? 'Details, cost, what to bring…' : 'Bring a blanket — kids welcome.', true)}
         {err ? <T variant="body" color={c.clay} style={{ marginTop: 14 }}>{err}</T> : null}
         <View style={{ marginTop: 22 }}><Button label={busy ? 'Sending…' : (isEvent ? 'Add to the schedule' : 'Send to Philia')} onPress={save} /></View>

@@ -118,16 +118,37 @@ export const repo = {
   async getPost(id: string) {
     if (!supabase) return mock.presence.find(p => p.id === id) ?? mock.presence[0];
     const { data: p } = await supabase.from('presence_posts')
-      .select('id, body, photo_path, song, created_at, members(display_name)').eq('id', id).maybeSingle();
+      .select('id, body, photo_path, song, member_id, created_at, members(display_name)').eq('id', id).maybeSingle();
     if (!p) return null;
     const { data: reps } = await supabase.from('post_replies')
-      .select('id, body, created_at, members(display_name)').eq('post_id', id).is('deleted_at', null)
+      .select('id, body, member_id, created_at, members(display_name)').eq('post_id', id).is('deleted_at', null)
       .order('created_at', { ascending: true });
     return {
       id: p.id, author: (p as any).members?.display_name ?? 'Someone',
       when: timeLabel(p.created_at), day: dayLabel(p.created_at), text: p.body, hasPhoto: !!p.photo_path, photoPath: (p as any).photo_path ?? null, song: (p as any).song ?? null,
-      replies: (reps ?? []).map((r: any) => ({ id: r.id, author: r.members?.display_name ?? 'Someone', when: timeLabel(r.created_at), text: r.body })),
+      authorMemberId: (p as any).member_id ?? null,
+      replies: (reps ?? []).map((r: any) => ({ id: r.id, author: r.members?.display_name ?? 'Someone', when: timeLabel(r.created_at), text: r.body, memberId: r.member_id })),
     };
+  },
+  async editPost(id: string, body: string): Promise<{ error?: string }> {
+    if (!supabase) return { error: 'Not connected' };
+    const { error } = await supabase.from('presence_posts').update({ body: body.trim() }).eq('id', id);
+    return error ? { error: error.message } : {};
+  },
+  async deletePost(id: string): Promise<{ error?: string }> {
+    if (!supabase) return { error: 'Not connected' };
+    const { error } = await supabase.from('presence_posts').update({ deleted_at: new Date().toISOString() }).eq('id', id);
+    return error ? { error: error.message } : {};
+  },
+  async editReply(id: string, body: string): Promise<{ error?: string }> {
+    if (!supabase) return { error: 'Not connected' };
+    const { error } = await supabase.from('post_replies').update({ body: body.trim() }).eq('id', id);
+    return error ? { error: error.message } : {};
+  },
+  async deleteReply(id: string): Promise<{ error?: string }> {
+    if (!supabase) return { error: 'Not connected' };
+    const { error } = await supabase.from('post_replies').update({ deleted_at: new Date().toISOString() }).eq('id', id);
+    return error ? { error: error.message } : {};
   },
   async addPost(groupId: string, memberId: string, body: string, photoUri?: string, songUrl?: string): Promise<{ error?: string }> {
     if (!supabase) return { error: 'Not connected' };

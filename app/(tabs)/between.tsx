@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Screen, Card, Kicker, Row, Stack, Button, PersonLine, Hairline } from '../../src/ui/primitives';
 import { SongCard } from '../../src/ui/SongCard';
+import { Appear } from '../../src/ui/motion';
 import { T } from '../../src/ui/Text';
 import { Icon } from '../../src/ui/Icon';
 import { useColors } from '../../src/theme/ThemeProvider';
@@ -67,11 +68,12 @@ function PresenceFeed() {
         <Empty line="Nothing yet. When someone notices God in their week — a song, a small answer — it shows up here." />
       ) : (
         <Stack gap={12}>
-          {posts.map(p => {
+          {posts.map((p, i) => {
             const header = p.day !== lastDay ? p.day : null; lastDay = p.day;
             return (
               <View key={p.id}>
                 {header ? <View style={{ marginBottom: 8, marginTop: header && posts.indexOf(p) ? 6 : 0 }}><Kicker>{header}</Kicker></View> : null}
+                <Appear index={i}>
                 <Pressable onPress={() => router.push(`/post/${p.id}`)}>
                   <Card pad={16}>
                     <PersonLine name={p.author} meta={p.when} />
@@ -80,6 +82,7 @@ function PresenceFeed() {
                     {p.song ? <SongCard song={p.song} /> : null}
                   </Card>
                 </Pressable>
+                </Appear>
               </View>
             );
           })}
@@ -102,8 +105,8 @@ function PrayerWall() {
         <Empty line="No requests yet. When someone needs prayer — for themselves or someone outside the group — it’ll be here." />
       ) : (
         <Stack gap={10}>
-          {prayers.map(p => (
-            <Card key={p.id} pad={15}>
+          {prayers.map((p, i) => (
+            <Appear key={p.id} index={i}><Card pad={15}>
               <PersonLine name={p.author} meta={p.when} metaColor={p.answered ? c.green : c.text2} />
               <T variant="body" style={{ fontSize: 16, lineHeight: 24, marginTop: 8 }}>{p.text}</T>
               {p.onBehalfOf ? <T variant="kicker" color={c.text2} style={{ marginTop: 8 }}>On behalf of {p.onBehalfOf}</T> : null}
@@ -113,7 +116,7 @@ function PrayerWall() {
                   : <View />}
                 {!p.answered ? <Pressable onPress={() => markAnswered(p.id)}><T variant="body" color={c.accent} style={{ fontSize: 14, fontWeight: '700' }}>Mark answered</T></Pressable> : <View />}
               </Row>
-            </Card>
+            </Card></Appear>
           ))}
         </Stack>
       )}

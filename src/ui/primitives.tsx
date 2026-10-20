@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme, useColors } from '../theme/ThemeProvider';
 import { radius, shadow, space } from '../theme/tokens';
 import { T } from './Text';
+import { Tap } from './motion';
 
 export function Screen({ children, scroll = true, pad = true, bg }:
   { children: React.ReactNode; scroll?: boolean; pad?: boolean; bg?: keyof ReturnType<typeof useColors> }) {
@@ -48,12 +49,12 @@ export function Button({ label, onPress, kind = 'primary' }:
   const c = useColors();
   const primary = kind === 'primary';
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => ({
+    <Tap onPress={onPress} style={{
       height: 54, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center',
-      backgroundColor: primary ? c.accent : c.surface2, opacity: pressed ? 0.85 : 1,
-    })}>
+      backgroundColor: primary ? c.accent : c.surface2,
+    }}>
       <T variant="body" style={{ fontWeight: '700', fontSize: 17 }} color={primary ? c.onAccent : c.text}>{label}</T>
-    </Pressable>
+    </Tap>
   );
 }
 

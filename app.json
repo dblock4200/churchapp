@@ -63,7 +63,8 @@
           "cameraPermission": "Philia uses the camera so you can take a profile photo."
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true
