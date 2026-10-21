@@ -32,13 +32,7 @@ export default function Talk() {
           <T variant="body" color={c.text2} style={{ marginTop: 8, textAlign: 'center' }}>This takes a minute or two after a talk. You can leave — it’ll be here when it’s done.</T>
         </View>
       ) : t.status === 'failed' ? (
-        <View style={{ paddingTop: 60, alignItems: 'center', paddingHorizontal: 24 }}>
-          <T variant="t2">The notes didn’t come through</T>
-          <T variant="body" color={c.text2} style={{ marginTop: 8, textAlign: 'center' }}>The recording is saved. You can try making the notes again.</T>
-          <Pressable onPress={() => { repo.retryTalk(t.id); qc.invalidateQueries({ queryKey: ['talk'] }); }} style={{ marginTop: 18 }}>
-            <T variant="body" color={c.accent} style={{ fontWeight: '700' }}>Try again</T>
-          </Pressable>
-        </View>
+        <RetryNotes talkId={t.id} onDone={() => qc.invalidateQueries({ queryKey: ['talk'] })} onRerecord={() => router.replace('/record-talk')} />
       ) : (
         <>
           <T variant="t1" style={{ marginTop: 8 }}>This week’s talk</T>
@@ -84,5 +78,31 @@ export default function Talk() {
         </>
       )}
     </Screen>
+  );
+}
+
+
+function RetryNotes({ talkId, onDone, onRerecord }: { talkId: string; onDone: () => void; onRerecord: () => void }) {
+  const c = useColors();
+  const [busy, setBusy] = React.useState(false);
+  async function retry() {
+    if (busy) return;
+    setBusy(true);
+    await repo.retryTalk(talkId);   // flips status back to processing + re-runs the notes
+    onDone();                        // refetch; the processing view + poll take over
+  }
+  return (
+    <View style={{ paddingTop: 60, alignItems: 'center', paddingHorizontal: 24 }}>
+      <T variant="t2">The notes didn’t come through</T>
+      <T variant="body" color={c.text2} style={{ marginTop: 8, textAlign: 'center' }}>
+        The recording is saved. You can make the notes again, or record the talk fresh.
+      </T>
+      <Pressable onPress={retry} disabled={busy} style={{ marginTop: 20, height: 50, borderRadius: 25, backgroundColor: c.accent, paddingHorizontal: 28, alignItems: 'center', justifyContent: 'center', opacity: busy ? 0.6 : 1 }}>
+        {busy ? <ActivityIndicator color={c.onAccent} /> : <T variant="body" color={c.onAccent} style={{ fontWeight: '700' }}>Try the notes again</T>}
+      </Pressable>
+      <Pressable onPress={onRerecord} style={{ marginTop: 16 }}>
+        <T variant="body" color={c.text2} style={{ fontWeight: '700' }}>Record it again</T>
+      </Pressable>
+    </View>
   );
 }

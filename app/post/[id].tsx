@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Pressable, TextInput, ActivityIndicator, Image, Alert } from 'react-native';
+import { View, Pressable, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Screen, Card, Row, Stack, PersonLine } from '../../src/ui/primitives';
@@ -8,6 +8,7 @@ import { Icon } from '../../src/ui/Icon';
 import { useColors } from '../../src/theme/ThemeProvider';
 import { usePost, usePhotoUrl } from '../../src/data/hooks';
 import { SongCard } from '../../src/ui/SongCard';
+import { AspectImage } from '../../src/ui/AspectImage';
 import { useAuth } from '../../src/auth/AuthProvider';
 import { repo } from '../../src/data/repo';
 
@@ -141,8 +142,6 @@ function ReplyRow({ r, mine, onChanged }: { r: any; mine: boolean; onChanged: ()
 }
 
 function DetailPhoto({ path }: { path: string }) {
-  const c = useColors();
   const { data: url } = usePhotoUrl(path);
-  if (!url) return <View style={{ height: 150, borderRadius: 16, backgroundColor: c.surface2, marginTop: 12 }} />;
-  return <Image source={{ uri: url }} style={{ width: '100%', height: 220, borderRadius: 16, marginTop: 12 }} resizeMode="cover" />;
+  return <AspectImage uri={url} />;
 }

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Pressable, Platform, ActivityIndicator } from 'react-native';
+import { View, Pressable, Platform, ActivityIndicator, Linking, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -31,8 +31,19 @@ export default function RecordTalk() {
   async function start() {
     setErr(null);
     if (Platform.OS === 'web') { setErr('Recording works on the phone app, not the web preview.'); return; }
-    const { granted } = await requestRecordingPermissionsAsync();
-    if (!granted) { setErr('Microphone permission is needed to record.'); return; }
+    const perm = await requestRecordingPermissionsAsync();
+    if (!perm.granted) {
+      if (perm.canAskAgain === false) {
+        Alert.alert(
+          'Microphone is off',
+          'To record the talk, turn on the microphone for Philia in Settings.',
+          [{ text: 'Not now', style: 'cancel' }, { text: 'Open Settings', onPress: () => Linking.openSettings() }],
+        );
+      } else {
+        setErr('Microphone access is needed to record the talk.');
+      }
+      return;
+    }
     await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
     await recorder.prepareToRecordAsync();
     recorder.record();

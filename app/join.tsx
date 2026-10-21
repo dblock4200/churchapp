@@ -13,12 +13,16 @@ export default function Join() {
   const { redeemInvite, signOut } = useAuth();
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  const usernameOk = /^[a-z0-9_]{3,20}$/.test(username.trim().toLowerCase());
+  const ready = code.trim().length > 0 && name.trim().length > 0 && usernameOk && !busy;
+
   async function join() {
     setBusy(true); setErr(null);
-    const { error } = await redeemInvite(code, name);
+    const { error } = await redeemInvite(code, name, username);
     setBusy(false);
     if (error) setErr(error); else router.replace('/');
   }
@@ -40,9 +44,13 @@ export default function Join() {
         <Stack gap={12} style={{ marginTop: 24 }}>
           {field(code, setCode, 'Invite code', { autoCapitalize: 'none' })}
           {field(name, setName, 'Your name (as the group knows you)')}
+          {field(username, (t: string) => setUsername(t.replace(/\s/g, '').toLowerCase()), 'Username (e.g. hannah_m)', { autoCapitalize: 'none' })}
         </Stack>
+        {username.length > 0 && !usernameOk ? (
+          <T variant="body" color={c.text2} style={{ marginTop: 8, fontSize: 13 }}>3-20 letters, numbers, or underscores.</T>
+        ) : null}
         {err ? <T variant="body" color={c.clay} style={{ marginTop: 12 }}>{err}</T> : null}
-        <View style={{ marginTop: 16, opacity: code.trim() && !busy ? 1 : 0.5 }} pointerEvents={code.trim() && !busy ? 'auto' : 'none'}>
+        <View style={{ marginTop: 16, opacity: ready ? 1 : 0.5 }} pointerEvents={ready ? 'auto' : 'none'}>
           <Button label={busy ? 'Joining…' : 'Join Philia'} onPress={join} />
         </View>
         <View style={{ marginTop: 14, alignItems: 'center' }}>

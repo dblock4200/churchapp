@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Pressable, Alert, ActivityIndicator } from 'react-native';
+import { View, Pressable, Alert, ActivityIndicator, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen, Card, Row, Avatar, Hairline } from '../../src/ui/primitives';
 import { T } from '../../src/ui/Text';
@@ -21,19 +21,36 @@ export default function You() {
 
   async function changeAvatar(fromCamera: boolean) {
     if (!member) return;
+    // Ask for the right permission first; if access is off for good, point to Settings.
+    const perm = fromCamera
+      ? await ImagePicker.requestCameraPermissionsAsync()
+      : await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert(
+        fromCamera ? 'Camera is off' : 'Photos are off',
+        `To ${fromCamera ? 'take a profile photo' : 'choose a photo'}, turn on access for Philia in Settings.`,
+        [{ text: 'Not now', style: 'cancel' }, { text: 'Open Settings', onPress: () => Linking.openSettings() }],
+      );
+      return;
+    }
     const res = fromCamera
       ? await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [1, 1], quality: 0.7 })
       : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.7 });
     if (res.canceled || !res.assets?.[0]?.uri) return;
     setBusy(true);
-    await repo.setMyAvatar(member.id, member.group_id, res.assets[0].uri);
-    await refreshMember();
-    setBusy(false);
+    try {
+      await repo.setMyAvatar(member.id, member.group_id, res.assets[0].uri);
+      await refreshMember();
+    } finally {
+      setBusy(false);
+    }
   }
   function onAvatarPress() {
     Alert.alert('Profile photo', undefined, [
-      { text: 'Take a photo', onPress: () => changeAvatar(true) },
-      { text: 'Choose from camera roll', onPress: () => changeAvatar(false) },
+      // Defer the picker until the alert has fully dismissed - launching a picker from
+      // inside an alert callback silently no-ops on iOS because the alert is still on screen.
+      { text: 'Take a photo', onPress: () => setTimeout(() => changeAvatar(true), 350) },
+      { text: 'Choose from camera roll', onPress: () => setTimeout(() => changeAvatar(false), 350) },
       { text: 'Cancel', style: 'cancel' },
     ]);
   }
@@ -55,6 +72,7 @@ export default function You() {
           </Pressable>
           <View style={{ flex: 1 }}>
             <T variant="t2">{name}</T>
+            {member?.username ? <T variant="body" color={c.text2} style={{ marginTop: 2, fontWeight: '600' }}>@{member.username}</T> : null}
             <T variant="body" color={c.text2} style={{ marginTop: 2 }}>{member?.is_leader ? 'Leads' : 'Part of'} {member?.group_name ?? 'Philia'}</T>
           </View>
         </Row>

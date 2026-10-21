@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { View, TextInput, Pressable } from 'react-native';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Stack } from '../src/ui/primitives';
 import { T } from '../src/ui/Text';
 import { Icon } from '../src/ui/Icon';
 import { useColors } from '../src/theme/ThemeProvider';
-import { useAuth } from '../src/auth/AuthProvider';
+import { useAuth, PASSWORD_RESET_ENABLED } from '../src/auth/AuthProvider';
 
 type Mode = 'signin' | 'signup';
 
 export default function SignIn() {
   const c = useColors();
+  const router = useRouter();
   const { signIn, signUp } = useAuth();
   const [mode, setMode] = useState<Mode>('signin');
   const [email, setEmail] = useState('');
@@ -87,6 +89,14 @@ export default function SignIn() {
             </Pressable>
           </>)}
         </Stack>
+
+        {mode === 'signin' && PASSWORD_RESET_ENABLED ? (
+          <View style={{ marginTop: 12, alignItems: 'flex-end' }}>
+            <Pressable onPress={() => router.push('/reset-password')} hitSlop={8}>
+              <T variant="body" color={c.text2} style={{ fontSize: 14, fontWeight: '700' }}>Forgot password?</T>
+            </Pressable>
+          </View>
+        ) : null}
 
         {err ? <T variant="body" color={c.clay} style={{ marginTop: 10 }}>{err}</T> : null}
 

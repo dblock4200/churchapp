@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Pressable, TextInput, Image, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
+import { View, Pressable, TextInput, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
@@ -11,6 +11,7 @@ import { composePrompts } from '../src/data/mock';
 import { useAuth } from '../src/auth/AuthProvider';
 import { repo } from '../src/data/repo';
 import * as ImagePicker from 'expo-image-picker';
+import { AspectImage } from '../src/ui/AspectImage';
 
 export default function Compose() {
   const c = useColors();
@@ -80,8 +81,8 @@ export default function Compose() {
         {err ? <T variant="body" color={c.clay} style={{ marginBottom: 8 }}>{err}</T> : null}
 
         {photo ? (
-          <View style={{ borderRadius: 20, overflow: 'hidden' }}>
-            <Image source={{ uri: photo }} style={{ width: '100%', height: 180 }} resizeMode="cover" />
+          <View style={{ marginTop: 4 }}>
+            <AspectImage uri={photo} radius={20} marginTop={0} />
             <Pressable onPress={() => setPhoto(null)} style={{ position: 'absolute', top: 10, right: 10, width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' }}>
               <Icon name="close" size={18} color="#fff" strokeWidth={2.4} />
             </Pressable>
@@ -119,7 +120,7 @@ export default function Compose() {
               {songUrl && !songOk ? (
                 <T variant="body" color={c.clay} style={{ fontSize: 13, marginTop: 8 }}>That doesn’t look like a Spotify, Apple Music, or YouTube link.</T>
               ) : songUrl && songOk ? (
-                <T variant="body" color={c.text2} style={{ fontSize: 13, marginTop: 8 }}>{songPlatformLabel} link added — it’ll play right in the post.</T>
+                <T variant="body" color={c.text2} style={{ fontSize: 13, marginTop: 8 }}>{songPlatformLabel} link added — it’ll show as a card the group can open.</T>
               ) : null}
             </View>
           ) : (

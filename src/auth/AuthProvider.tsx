@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
-export type Member = { id: string; group_id: string; display_name: string; is_leader: boolean; group_name?: string; avatar_path?: string | null };
+export type Member = { id: string; group_id: string; display_name: string; is_leader: boolean; group_name?: string; avatar_path?: string | null; username?: string | null };
 type Result = { error?: string; needsConfirm?: boolean };
 type AuthValue = {
   ready: boolean;
@@ -11,10 +11,18 @@ type AuthValue = {
   member: Member | null;
   signIn: (email: string, password: string) => Promise<Result>;
   signUp: (email: string, password: string) => Promise<Result>;
-  redeemInvite: (code: string, name: string) => Promise<Result>;
+  redeemInvite: (code: string, name: string, username?: string) => Promise<Result>;
+  requestPasswordReset: (email: string) => Promise<Result>;
+  completePasswordReset: (email: string, code: string, newPassword: string) => Promise<Result>;
   signOut: () => Promise<void>;
   refreshMember: () => Promise<void>;
 };
+
+// Password reset is fully built (reset-password screen + requestPasswordReset/
+// completePasswordReset below). It stays gated until the recovery email can carry
+// a 6-digit code — which needs Supabase Pro or a custom SMTP provider, since the
+// free tier's default mailer only sends a link and won't allow template edits.
+export const PASSWORD_RESET_ENABLED = false;
 
 const Ctx = createContext<AuthValue>(null as any);
 
@@ -27,13 +35,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!supabase || !s) { setMember(null); return; }
     const { data } = await supabase
       .from('members')
-      .select('id, group_id, display_name, is_leader, avatar_path, groups(name)')
+      .select('id, group_id, display_name, is_leader, avatar_path, username, groups(name)')
       .eq('user_id', s.user.id)
       .limit(1)
       .maybeSingle();
     setMember(data ? {
       id: data.id, group_id: data.group_id, display_name: data.display_name,
-      is_leader: data.is_leader, group_name: (data as any).groups?.name, avatar_path: (data as any).avatar_path ?? null,
+      is_leader: data.is_leader, group_name: (data as any).groups?.name, avatar_path: (data as any).avatar_path ?? null, username: (data as any).username ?? null,
     } : null);
   }, []);
 
@@ -70,14 +78,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { needsConfirm: !data.session };
   }, []);
 
-  const redeemInvite = useCallback(async (code: string, name: string): Promise<Result> => {
+  const redeemInvite = useCallback(async (code: string, name: string, username?: string): Promise<Result> => {
     if (!supabase) return { error: 'Not connected' };
-    const { error } = await supabase.rpc('redeem_invite', { p_code: code.trim(), p_name: name.trim() });
+    const { error } = await supabase.rpc('redeem_invite', { p_code: code.trim(), p_name: name.trim(), p_username: (username ?? '').trim() });
     if (error) return { error: friendly(error.message) };
     const { data } = await supabase.auth.getSession();
     await loadMember(data.session);
     return {};
   }, [loadMember]);
+
+  // Password reset — mobile-friendly: Supabase emails a 6-digit recovery code,
+  // the person enters it with a new password, we verify then set the password.
+  const requestPasswordReset = useCallback(async (email: string): Promise<Result> => {
+    if (!supabase) return { error: 'Not connected' };
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase());
+    return error ? { error: friendly(error.message) } : {};
+  }, []);
+  const completePasswordReset = useCallback(async (email: string, code: string, newPassword: string): Promise<Result> => {
+    if (!supabase) return { error: 'Not connected' };
+    const { error: vErr } = await supabase.auth.verifyOtp({ email: email.trim().toLowerCase(), token: code.trim(), type: 'recovery' });
+    if (vErr) return { error: /expired|invalid|token/i.test(vErr.message) ? 'That code is wrong or has expired. Request a new one.' : friendly(vErr.message) };
+    const { error: uErr } = await supabase.auth.updateUser({ password: newPassword });
+    return uErr ? { error: friendly(uErr.message) } : {};
+  }, []);
 
   const signOut = useCallback(async () => { await supabase?.auth.signOut(); setMember(null); }, []);
   const refreshMember = useCallback(async () => {
@@ -85,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [loadMember]);
 
   return (
-    <Ctx.Provider value={{ ready, session, member, signIn, signUp, redeemInvite, signOut, refreshMember }}>
+    <Ctx.Provider value={{ ready, session, member, signIn, signUp, redeemInvite, requestPasswordReset, completePasswordReset, signOut, refreshMember }}>
       {children}
     </Ctx.Provider>
   );
