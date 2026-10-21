@@ -35,11 +35,23 @@ export default function PostDetail() {
     setBusy(false);
     if (!res.error) { setReply(''); refresh(); }
   }
-  async function saveEdit() { if (!draft.trim()) return; await repo.editPost(pid, draft); setEditing(false); refresh(); }
+  async function saveEdit() {
+    const body = draft.trim(); if (!body) return;
+    setEditing(false);
+    qc.setQueryData(['post', pid], (old: any) => (old ? { ...old, text: body } : old)); // instant
+    const res = await repo.editPost(pid, body);
+    if (res?.error) { refresh(); return; }       // on failure, fall back to server truth
+    qc.invalidateQueries({ queryKey: ['presence'] });
+  }
   function confirmDelete() {
     Alert.alert('Delete this post?', 'It will be removed for everyone.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => { await repo.deletePost(pid); refresh(); router.back(); } },
+      { text: 'Delete', style: 'destructive', onPress: async () => {
+        qc.setQueryData(['presence'], (old: any) => (Array.isArray(old) ? old.filter((x: any) => x.id !== pid) : old));
+        router.back();
+        await repo.deletePost(pid);
+        qc.invalidateQueries({ queryKey: ['presence'] });
+      } },
     ]);
   }
 
@@ -82,7 +94,7 @@ export default function PostDetail() {
 
           {p.replies.length > 0 ? (
             <Stack gap={18} style={{ marginTop: 18 }}>
-              {p.replies.map(r => <ReplyRow key={r.id} r={r} mine={!!member?.id && (r as any).memberId === member.id} onChanged={refresh} />)}
+              {p.replies.map(r => <ReplyRow key={r.id} pid={pid} r={r} mine={!!member?.id && (r as any).memberId === member.id} onChanged={refresh} />)}
             </Stack>
           ) : (
             <T variant="body" color={c.text2} style={{ marginTop: 20 }}>No replies yet. Be the first to say something.</T>
@@ -104,15 +116,25 @@ export default function PostDetail() {
   );
 }
 
-function ReplyRow({ r, mine, onChanged }: { r: any; mine: boolean; onChanged: () => void }) {
+function ReplyRow({ pid, r, mine, onChanged }: { pid: string; r: any; mine: boolean; onChanged: () => void }) {
   const c = useColors();
+  const qc = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(r.text);
-  async function save() { if (!draft.trim()) return; await repo.editReply(r.id, draft); setEditing(false); onChanged(); }
+  async function save() {
+    const body = draft.trim(); if (!body) return;
+    setEditing(false);
+    qc.setQueryData(['post', pid], (old: any) => (old ? { ...old, replies: old.replies.map((x: any) => (x.id === r.id ? { ...x, text: body } : x)) } : old));
+    const res = await repo.editReply(r.id, body);
+    if (res?.error) onChanged();
+  }
   function confirmDelete() {
     Alert.alert('Delete this reply?', undefined, [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => { await repo.deleteReply(r.id); onChanged(); } },
+      { text: 'Delete', style: 'destructive', onPress: async () => {
+        qc.setQueryData(['post', pid], (old: any) => (old ? { ...old, replies: old.replies.filter((x: any) => x.id !== r.id) } : old));
+        await repo.deleteReply(r.id);
+      } },
     ]);
   }
   return (

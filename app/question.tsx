@@ -35,6 +35,20 @@ export default function Question() {
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [editDraft, setEditDraft] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  async function saveEdit() {
+    const body = editDraft.trim();
+    if (!body || !state?.mine?.id) return;
+    setSavingEdit(true);
+    const res = await repo.editAnswer(state.mine.id, body);
+    setSavingEdit(false);
+    if (res.error) { setErr(res.error); return; }
+    setEditing(false);
+    qc.invalidateQueries({ queryKey: ['answerState'] });
+  }
 
   async function send() {
     if (!w?.id || !member?.id || !draft.trim()) return;
@@ -88,8 +102,34 @@ export default function Question() {
           </T>
           <Stack gap={24} style={{ marginTop: 20 }}>
             <View>
-              <PersonLine name={member?.display_name ?? 'You'} meta="you" />
-              <T variant="scripture" style={{ fontSize: 17, lineHeight: 30, marginTop: 10 }}>{state.mine?.text}</T>
+              <Row style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                <PersonLine name={member?.display_name ?? 'You'} meta="you" />
+                {!editing ? (
+                  <Pressable onPress={() => { setEditDraft(state.mine?.text ?? ''); setEditing(true); setErr(null); }} hitSlop={8}>
+                    <T variant="body" color={c.accent} style={{ fontSize: 14, fontWeight: '700' }}>Edit</T>
+                  </Pressable>
+                ) : null}
+              </Row>
+              {editing ? (
+                <>
+                  <View style={{ marginTop: 10, borderRadius: 16, backgroundColor: c.surface2, padding: 14 }}>
+                    <TextInput
+                      value={editDraft} onChangeText={setEditDraft} multiline autoFocus
+                      placeholderTextColor={c.text2}
+                      style={{ color: c.text, fontSize: 17, lineHeight: 28, minHeight: 90, textAlignVertical: 'top' }}
+                    />
+                  </View>
+                  {err ? <T variant="body" color={c.clay} style={{ marginTop: 8 }}>{err}</T> : null}
+                  <Row gap={18} style={{ marginTop: 10, justifyContent: 'flex-end' }}>
+                    <Pressable onPress={() => { setEditing(false); setErr(null); }}><T variant="body" color={c.text2} style={{ fontWeight: '700' }}>Cancel</T></Pressable>
+                    <Pressable onPress={saveEdit} disabled={savingEdit || !editDraft.trim()}>
+                      <T variant="body" color={c.accent} style={{ fontWeight: '700', opacity: savingEdit || !editDraft.trim() ? 0.5 : 1 }}>{savingEdit ? 'Saving…' : 'Save'}</T>
+                    </Pressable>
+                  </Row>
+                </>
+              ) : (
+                <T variant="scripture" style={{ fontSize: 17, lineHeight: 30, marginTop: 10 }}>{state.mine?.text}</T>
+              )}
             </View>
             {others.map(a => (
               <View key={a.id}>

@@ -65,7 +65,13 @@
         }
       ],
       "expo-asset",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "Philia adds group gatherings and meet-ups to your calendar when you ask."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
