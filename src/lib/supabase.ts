@@ -21,3 +21,5 @@ export const supabase: SupabaseClient | null = configured
   : null;
 
 export const hasSupabase = configured;
+export const SUPABASE_URL = url ?? '';
+export const SUPABASE_ANON = anon ?? '';

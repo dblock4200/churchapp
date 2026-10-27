@@ -1,19 +1,44 @@
 // The one place that knows where data comes from. Today: in-memory mock.
 // Next: replace each function body with a Supabase query (see src/lib/supabase).
 import * as mock from './mock';
-import { supabase } from '../lib/supabase';
+import { supabase, SUPABASE_URL, SUPABASE_ANON } from '../lib/supabase';
 import { Platform } from 'react-native';
-import { File } from 'expo-file-system';
+import { File, UploadType } from 'expo-file-system';
 
 const ok = <T,>(v: T) => Promise.resolve(v);
 
-// Read a local image/audio file into bytes for upload. On native, fetch(uri).blob()
-// yields an EMPTY blob for file:// URIs (a long-standing RN gotcha) — that silently
-// uploaded 0-byte photos and talk audio. expo-file-system reads the real bytes;
-// on web the uri is a blob: URL that fetch handles correctly.
-async function readBytes(uri: string): Promise<ArrayBuffer> {
-  if (Platform.OS === 'web') return await (await fetch(uri)).arrayBuffer();
-  return await new File(uri).arrayBuffer();
+// Upload a local file (photo / talk audio) to Supabase Storage.
+// On native, React Native's fetch cannot reliably send a Blob/ArrayBuffer request
+// body, so supabase-js uploaded 0-byte files. expo-file-system's File.upload()
+// streams the real bytes through native networking straight to the Storage REST
+// endpoint, bypassing JS fetch entirely. On web, fetch + supabase-js works fine.
+async function uploadToStorage(bucket: string, path: string, uri: string, contentType: string): Promise<{ error?: string }> {
+  if (!supabase) return { error: 'Not connected' };
+  if (Platform.OS === 'web') {
+    const blob = await (await fetch(uri)).blob();
+    const { error } = await supabase.storage.from(bucket).upload(path, blob, { contentType });
+    return error ? { error: error.message } : {};
+  }
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) return { error: 'Not signed in' };
+  const url = `${SUPABASE_URL}/storage/v1/object/${bucket}/${encodeURI(path)}`;
+  try {
+    const res = await new File(uri).upload(url, {
+      httpMethod: 'POST',
+      uploadType: UploadType.BINARY_CONTENT,
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        apikey: SUPABASE_ANON,
+        'content-type': contentType,
+        'cache-control': '3600',
+        'x-upsert': 'false',
+      },
+    });
+    if (res.status >= 200 && res.status < 300) return {};
+    return { error: `Upload failed (${res.status})` };
+  } catch (e) {
+    return { error: 'Could not read the photo to upload.' };
+  }
 }
 
 // Fire-and-forget push notification for a group event (reply/prayer/week/partner).
@@ -172,10 +197,9 @@ export const repo = {
     if (photoUri) {
       const ext = (photoUri.split('?')[0].split('.').pop() || 'jpg').toLowerCase();
       const path = `${groupId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-      const bytes = await readBytes(photoUri);
       const contentType = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
-      const up = await supabase.storage.from('photos').upload(path, bytes, { contentType });
-      if (up.error) return { error: up.error.message };
+      const up = await uploadToStorage('photos', path, photoUri, contentType);
+      if (up.error) return { error: up.error };
       photo_path = path;
     }
     let song: any = null;
@@ -213,10 +237,9 @@ export const repo = {
     if (!supabase) return { error: 'Not connected' };
     const ext = (uri.split('?')[0].split('.').pop() || 'jpg').toLowerCase();
     const path = `${groupId}/avatar_${memberId}_${Date.now()}.${ext}`;
-    const bytes = await readBytes(uri);
     const contentType = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
-    const up = await supabase.storage.from('photos').upload(path, bytes, { contentType });
-    if (up.error) return { error: up.error.message };
+    const up = await uploadToStorage('photos', path, uri, contentType);
+    if (up.error) return { error: up.error };
     const { error } = await supabase.from('members').update({ avatar_path: path }).eq('id', memberId);
     return error ? { error: error.message } : {};
   },
@@ -387,9 +410,8 @@ export const repo = {
   async startTalk(groupId: string, weekId: string | null, memberId: string, fileUri: string, durationSeconds: number): Promise<{ error?: string; talkId?: string }> {
     if (!supabase) return { error: 'Not connected' };
     const path = `${groupId}/${Date.now()}_${Math.random().toString(36).slice(2)}.m4a`;
-    const bytes = await readBytes(fileUri);
-    const up = await supabase.storage.from('talks').upload(path, bytes, { contentType: 'audio/m4a' });
-    if (up.error) return { error: up.error.message };
+    const up = await uploadToStorage('talks', path, fileUri, 'audio/m4a');
+    if (up.error) return { error: up.error };
     const ins = await supabase.from('talks').insert({ group_id: groupId, week_id: weekId, recorded_by: memberId, audio_path: path, duration_seconds: durationSeconds, status: 'processing', notes_started_at: new Date().toISOString() }).select('id').single();
     if (ins.error) return { error: ins.error.message };
     supabase.functions.invoke('transcribe-talk', { body: { talkId: ins.data.id } }).catch(() => {});

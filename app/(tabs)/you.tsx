@@ -39,7 +39,8 @@ export default function You() {
     if (res.canceled || !res.assets?.[0]?.uri) return;
     setBusy(true);
     try {
-      await repo.setMyAvatar(member.id, member.group_id, res.assets[0].uri);
+      const r = await repo.setMyAvatar(member.id, member.group_id, res.assets[0].uri);
+      if (r.error) { Alert.alert('Couldn’t update your photo', r.error); return; }
       await refreshMember();
     } finally {
       setBusy(false);
